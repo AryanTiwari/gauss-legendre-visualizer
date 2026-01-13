@@ -52,14 +52,6 @@ export function IntervalSliders({
     }
   };
 
-  // Quick preset buttons
-  const presets = [
-    { label: '[-1, 1]', a: -1, b: 1 },
-    { label: '[0, 1]', a: 0, b: 1 },
-    { label: '[0, π]', a: 0, b: Math.PI },
-    { label: '[-π, π]', a: -Math.PI, b: Math.PI }
-  ];
-
   return (
     <div className="bg-white rounded-lg shadow-md p-4">
       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -103,32 +95,6 @@ export function IntervalSliders({
       {error && (
         <p className="mt-2 text-sm text-red-600">{error}</p>
       )}
-
-      {/* Preset buttons */}
-      <div className="mt-3">
-        <span className="text-xs text-gray-500 mr-2">Quick presets:</span>
-        {presets.map((preset, i) => (
-          <button
-            key={i}
-            onClick={() => {
-              onChangeA(preset.a);
-              onChangeB(preset.b);
-              setError('');
-            }}
-            className="px-2 py-1 text-xs bg-gray-100 hover:bg-indigo-100 rounded mr-1 transition-colors"
-          >
-            {preset.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Current interval display */}
-      <div className="mt-3 text-center text-sm text-gray-600">
-        Integrating over [{valueA.toFixed(3)}, {valueB.toFixed(3)}]
-        <span className="text-gray-400 ml-2">
-          (width: {(valueB - valueA).toFixed(3)})
-        </span>
-      </div>
     </div>
   );
 }

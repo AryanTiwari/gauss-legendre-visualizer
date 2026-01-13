@@ -65,18 +65,25 @@ export function ResultsPanel({
           className="mb-2"
           dangerouslySetInnerHTML={{ __html: integralLatex }}
         />
-        <div className="text-3xl font-bold text-indigo-600">
-          {isFinite(integral) ? integral.toFixed(8) : 'undefined'}
+
+        {/* Quadrature Approximation */}
+        <div className="mt-3">
+          <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+            Quadrature Approximation
+          </p>
+          <div className="text-3xl font-bold text-indigo-600">
+            {isFinite(integral) ? integral.toFixed(8) : 'undefined'}
+          </div>
         </div>
 
         {/* Accuracy indicator */}
         {mightBeExact && (
-          <p className="text-sm text-green-600 mt-1">
-            Likely exact (polynomial degree ≤ {2 * degree - 1})
+          <p className="text-sm text-green-600 mt-2">
+            This is likely the exact value (polynomial degree ≤ {2 * degree - 1})
           </p>
         )}
         {errorEstimate !== null && !mightBeExact && (
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-gray-500 mt-2">
             Estimated error: ±{errorEstimate.toExponential(2)}
           </p>
         )}
