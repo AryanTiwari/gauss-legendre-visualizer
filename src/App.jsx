@@ -91,6 +91,7 @@ function App() {
               intervalA={intervalA}
               intervalB={intervalB}
               degree={degree}
+              parsedFn={parsedFunction.fn}
             />
           </div>
         </div>

@@ -8,13 +8,15 @@
 import { useMemo } from 'react';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
+import { computeQuadrature } from '../utils/gaussLegendre';
 
 export function ResultsPanel({
   results,
   expression,
   intervalA,
   intervalB,
-  degree
+  degree,
+  parsedFn
 }) {
   // Render the integral notation
   const integralLatex = useMemo(() => {
@@ -31,6 +33,17 @@ export function ResultsPanel({
       return '';
     }
   }, [expression, intervalA, intervalB]);
+
+  // Compute reference value using n=10 quadrature (highest available)
+  const referenceValue = useMemo(() => {
+    if (!parsedFn) return null;
+    try {
+      const result = computeQuadrature(parsedFn, intervalA, intervalB, 10);
+      return result.integral;
+    } catch {
+      return null;
+    }
+  }, [parsedFn, intervalA, intervalB]);
 
   // Handle no results
   if (!results) {
@@ -66,25 +79,45 @@ export function ResultsPanel({
           dangerouslySetInnerHTML={{ __html: integralLatex }}
         />
 
-        {/* Quadrature Approximation */}
-        <div className="mt-3">
-          <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
-            Quadrature Approximation
-          </p>
-          <div className="text-3xl font-bold text-indigo-600">
-            {isFinite(integral) ? integral.toFixed(8) : 'undefined'}
+        {/* Values comparison */}
+        <div className="mt-3 grid grid-cols-2 gap-4">
+          {/* Reference Value (n=10) */}
+          <div className="border-r border-gray-200 pr-4">
+            <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+              Reference Value (n=10)
+            </p>
+            <div className="text-2xl font-bold text-gray-700">
+              {referenceValue !== null && isFinite(referenceValue)
+                ? referenceValue.toFixed(8)
+                : 'undefined'}
+            </div>
+          </div>
+
+          {/* Quadrature Approximation */}
+          <div className="pl-4">
+            <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+              Your Approximation (n={degree})
+            </p>
+            <div className="text-2xl font-bold text-indigo-600">
+              {isFinite(integral) ? integral.toFixed(8) : 'undefined'}
+            </div>
           </div>
         </div>
 
         {/* Accuracy indicator */}
         {mightBeExact && (
-          <p className="text-sm text-green-600 mt-2">
+          <p className="text-sm text-green-600 mt-3">
             This is likely the exact value (polynomial degree ≤ {2 * degree - 1})
           </p>
         )}
         {errorEstimate !== null && !mightBeExact && (
-          <p className="text-sm text-gray-500 mt-2">
+          <p className="text-sm text-gray-500 mt-3">
             Estimated error: ±{errorEstimate.toExponential(2)}
+          </p>
+        )}
+        {degree === 10 && !mightBeExact && (
+          <p className="text-sm text-gray-500 mt-3">
+            Using maximum available degree (n=10)
           </p>
         )}
       </div>
