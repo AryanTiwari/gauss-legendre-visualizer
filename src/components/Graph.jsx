@@ -40,8 +40,8 @@ export function Graph({
   // Calculate bounding box for original function view
   const calculateOriginalBounds = useCallback(() => {
     const padding = Math.max(1, (intervalB - intervalA) * 0.2);
-    const xMin = intervalA - padding;
-    const xMax = intervalB + padding;
+    let xMin = intervalA - padding;
+    let xMax = intervalB + padding;
 
     let yMin = -1;
     let yMax = 1;
@@ -64,13 +64,26 @@ export function Graph({
       yMax += yPadding;
     }
 
+    // Ensure equal x and y ranges for 1:1 aspect ratio
+    const xRange = xMax - xMin;
+    const yRange = yMax - yMin;
+    if (xRange > yRange) {
+      const diff = (xRange - yRange) / 2;
+      yMin -= diff;
+      yMax += diff;
+    } else if (yRange > xRange) {
+      const diff = (yRange - xRange) / 2;
+      xMin -= diff;
+      xMax += diff;
+    }
+
     return [xMin, yMax, xMax, yMin];
   }, [fn, intervalA, intervalB, isValid]);
 
   // Calculate bounding box for standard interval [-1, 1]
   const calculateStandardBounds = useCallback(() => {
-    const xMin = -1.3;
-    const xMax = 1.3;
+    let xMin = -1.5;
+    let xMax = 1.5;
 
     let yMin = -1;
     let yMax = 1;
@@ -92,12 +105,26 @@ export function Graph({
       yMax += yPadding;
     }
 
+    // Ensure equal x and y ranges for 1:1 aspect ratio
+    const xRange = xMax - xMin;
+    const yRange = yMax - yMin;
+    if (xRange > yRange) {
+      const diff = (xRange - yRange) / 2;
+      yMin -= diff;
+      yMax += diff;
+    } else if (yRange > xRange) {
+      const diff = (yRange - xRange) / 2;
+      xMin -= diff;
+      xMax += diff;
+    }
+
     return [xMin, yMax, xMax, yMin];
   }, [fn, intervalA, intervalB, isValid]);
 
   // Calculate bounding box for Legendre polynomial
   const calculateLegendreBounds = useCallback(() => {
-    return [-1.3, 1.5, 1.3, -1.5];
+    // Equal ranges for 1:1 aspect ratio: [-1.5, 1.5] on both axes
+    return [-1.5, 1.5, 1.5, -1.5];
   }, []);
 
   // Initialize and update the board
