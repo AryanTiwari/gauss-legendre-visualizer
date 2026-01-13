@@ -21,12 +21,12 @@ export function DegreeSelector({ value, onChange }) {
         className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
       />
 
-      {/* Degree labels */}
-      <div className="flex justify-between mt-1 text-xs text-gray-500">
+      {/* Degree labels - px-1 compensates for slider thumb width */}
+      <div className="flex justify-between mt-1 text-xs text-gray-500 px-1">
         {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
           <span
             key={n}
-            className={n === value ? 'text-indigo-600 font-bold' : ''}
+            className={`w-4 text-center ${n === value ? 'text-indigo-600 font-bold' : ''}`}
           >
             {n}
           </span>

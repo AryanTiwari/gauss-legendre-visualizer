@@ -200,7 +200,8 @@ export function Graph({
         strokeColor: '#6366f1',
         strokeWidth: 0,
         highlight: false,
-        vertices: { visible: false },
+        fixed: true,
+        vertices: { visible: false, fixed: true },
         hasInnerPoints: false
       });
     }
@@ -209,28 +210,32 @@ export function Graph({
     const xAxis = board.defaultAxes.x;
     const sliderA = board.create('glider', [intervalA, 0, xAxis], {
       name: 'a',
-      size: 6,
+      size: 8,
       color: '#3b82f6',
       strokeColor: '#1d4ed8',
       strokeWidth: 2,
       label: {
-        offset: [0, -20],
-        fontSize: 14,
-        color: '#3b82f6'
+        offset: [0, -25],
+        fontSize: 18,
+        color: '#1d4ed8',
+        fontWeight: 'bold',
+        cssStyle: 'font-weight: bold; text-shadow: 1px 1px 2px white, -1px -1px 2px white, 1px -1px 2px white, -1px 1px 2px white;'
       }
     });
 
     // Create draggable endpoint for 'b' - glider constrained to x-axis
     const sliderB = board.create('glider', [intervalB, 0, xAxis], {
       name: 'b',
-      size: 6,
+      size: 8,
       color: '#ef4444',
       strokeColor: '#dc2626',
       strokeWidth: 2,
       label: {
-        offset: [0, -20],
-        fontSize: 14,
-        color: '#ef4444'
+        offset: [0, -25],
+        fontSize: 18,
+        color: '#dc2626',
+        fontWeight: 'bold',
+        cssStyle: 'font-weight: bold; text-shadow: 1px 1px 2px white, -1px -1px 2px white, 1px -1px 2px white, -1px 1px 2px white;'
       }
     });
 
@@ -361,37 +366,70 @@ export function Graph({
   const renderLegendrePolynomial = (board) => {
     if (!degree) return;
 
+    // Draw shaded bounding box for [-1, 1] x [-1, 1] region
+    board.create('polygon', [
+      [-1, -1],
+      [1, -1],
+      [1, 1],
+      [-1, 1]
+    ], {
+      fillColor: '#e0e7ff',
+      fillOpacity: 0.3,
+      strokeColor: '#6366f1',
+      strokeWidth: 2,
+      fixed: true,
+      highlight: false,
+      vertices: { visible: false, fixed: true },
+      hasInnerPoints: false
+    });
+
+    // Draw horizontal lines at y = -1, 0, 1
+    board.create('segment', [[-1, 0], [1, 0]], {
+      strokeColor: '#9ca3af',
+      strokeWidth: 1,
+      dash: 2,
+      fixed: true,
+      highlight: false
+    });
+    board.create('segment', [[-1, 1], [1, 1]], {
+      strokeColor: '#6366f1',
+      strokeWidth: 1,
+      fixed: true,
+      highlight: false
+    });
+    board.create('segment', [[-1, -1], [1, -1]], {
+      strokeColor: '#6366f1',
+      strokeWidth: 1,
+      fixed: true,
+      highlight: false
+    });
+
+    // Draw vertical lines at x = -1 and 1
+    board.create('segment', [[-1, -1], [-1, 1]], {
+      strokeColor: '#6366f1',
+      strokeWidth: 1,
+      fixed: true,
+      highlight: false
+    });
+    board.create('segment', [[1, -1], [1, 1]], {
+      strokeColor: '#6366f1',
+      strokeWidth: 1,
+      fixed: true,
+      highlight: false
+    });
+
+    // Add corner labels for the bounding box
+    board.create('text', [-1.08, -1, '-1'], { fontSize: 12, color: '#6366f1', fixed: true });
+    board.create('text', [1.02, -1, '1'], { fontSize: 12, color: '#6366f1', fixed: true });
+    board.create('text', [-1.15, 1, '1'], { fontSize: 12, color: '#6366f1', fixed: true });
+    board.create('text', [-1.18, -1, '-1'], { fontSize: 12, color: '#6366f1', fixed: true });
+
     // Plot Legendre polynomial P_n(x)
     board.create('functiongraph', [
       (x) => evaluateLegendre(degree, x)
     ], {
       strokeColor: '#10b981',
-      strokeWidth: 2,
-      highlight: false
-    });
-
-    // Draw horizontal line at y = 0 for reference
-    board.create('line', [[0, 0], [1, 0]], {
-      strokeColor: '#9ca3af',
-      strokeWidth: 1,
-      dash: 2,
-      fixed: true,
-      highlight: false
-    });
-
-    // Draw vertical lines at -1 and 1 to mark the interval
-    board.create('segment', [[-1, -2], [-1, 2]], {
-      strokeColor: '#9ca3af',
-      strokeWidth: 1,
-      dash: 2,
-      fixed: true,
-      highlight: false
-    });
-    board.create('segment', [[1, -2], [1, 2]], {
-      strokeColor: '#9ca3af',
-      strokeWidth: 1,
-      dash: 2,
-      fixed: true,
+      strokeWidth: 2.5,
       highlight: false
     });
 
