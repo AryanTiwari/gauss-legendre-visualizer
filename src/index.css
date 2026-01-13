@@ -15,7 +15,7 @@ body {
 /* JSXGraph container styles */
 .jxgbox {
   width: 100% !important;
-  aspect-ratio: 4/3;
+  aspect-ratio: 1/1;
 }
 
 /* KaTeX display styles */

@@ -532,7 +532,7 @@ export function Graph({
         ref={containerRef}
         id="jxgbox"
         className="jxgbox w-full"
-        style={{ aspectRatio: '4/3', minHeight: '400px' }}
+        style={{ aspectRatio: '1/1', minHeight: '400px' }}
       />
 
       {/* Description bar */}
