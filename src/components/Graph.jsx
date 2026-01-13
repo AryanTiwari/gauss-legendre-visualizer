@@ -268,6 +268,49 @@ export function Graph({
       return isFinite(y) ? y : NaN;
     };
 
+    // Get y bounds for the shaded region
+    let yMin = 0, yMax = 1;
+    for (let i = 0; i <= 100; i++) {
+      const xi = -1 + 2 * i / 100;
+      const y = transformedFn(xi);
+      if (isFinite(y)) {
+        if (y < yMin) yMin = y;
+        if (y > yMax) yMax = y;
+      }
+    }
+    const yPadding = Math.max(0.5, (yMax - yMin) * 0.1);
+
+    // Draw shaded region showing [-1, 1] interval bounds
+    board.create('polygon', [
+      [-1, yMin - yPadding],
+      [1, yMin - yPadding],
+      [1, yMax + yPadding],
+      [-1, yMax + yPadding]
+    ], {
+      fillColor: '#e0e7ff',
+      fillOpacity: 0.2,
+      strokeColor: '#6366f1',
+      strokeWidth: 2,
+      fixed: true,
+      highlight: false,
+      vertices: { visible: false, fixed: true },
+      hasInnerPoints: false
+    });
+
+    // Add labels at x = -1 and x = 1
+    board.create('text', [-1, yMin - yPadding - 0.15, '-1'], {
+      fontSize: 14,
+      color: '#6366f1',
+      fixed: true,
+      anchorX: 'middle'
+    });
+    board.create('text', [1, yMin - yPadding - 0.15, '1'], {
+      fontSize: 14,
+      color: '#6366f1',
+      fixed: true,
+      anchorX: 'middle'
+    });
+
     // Plot the transformed function curve
     board.create('functiongraph', [transformedFn], {
       strokeColor: '#6366f1',
@@ -341,25 +384,6 @@ export function Graph({
       });
     }
 
-    // Draw vertical lines at -1 and 1 to mark the interval
-    board.create('line', [[-1, -100], [-1, 100]], {
-      strokeColor: '#9ca3af',
-      strokeWidth: 1,
-      dash: 2,
-      fixed: true,
-      highlight: false,
-      straightFirst: false,
-      straightLast: false
-    });
-    board.create('line', [[1, -100], [1, 100]], {
-      strokeColor: '#9ca3af',
-      strokeWidth: 1,
-      dash: 2,
-      fixed: true,
-      highlight: false,
-      straightFirst: false,
-      straightLast: false
-    });
   };
 
   // Render the Legendre polynomial view (Tab 3)
