@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+/* JSXGraph container styles */
+.jxgbox {
+  width: 100% !important;
+  aspect-ratio: 4/3;
+}
+
+/* KaTeX display styles */
+.katex-display {
+  margin: 0.5em 0;
+}
