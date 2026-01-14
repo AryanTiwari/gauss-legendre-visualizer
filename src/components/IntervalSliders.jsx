@@ -95,6 +95,11 @@ export function IntervalSliders({
       {error && (
         <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>
       )}
+
+      {/* Hint about dragging */}
+      <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">
+        Tip: You can also drag the a and b points on the graph
+      </p>
     </div>
   );
 }

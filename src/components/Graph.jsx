@@ -11,6 +11,38 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import JXG from 'jsxgraph';
 import { getNodesAndWeights, evaluateLegendre } from '../utils/gaussLegendre';
 
+// Hook to detect dark mode
+function useDarkMode() {
+  const getInitialDarkMode = () => {
+    // Check localStorage first (same logic as DarkModeToggle)
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('darkMode');
+      if (stored !== null) {
+        return stored === 'true';
+      }
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    return false;
+  };
+
+  const [isDark, setIsDark] = useState(getInitialDarkMode);
+
+  useEffect(() => {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'class') {
+          setIsDark(document.documentElement.classList.contains('dark'));
+        }
+      });
+    });
+
+    observer.observe(document.documentElement, { attributes: true });
+    return () => observer.disconnect();
+  }, []);
+
+  return isDark;
+}
+
 const TAB_LABELS = [
   'Original Function',
   'Standard Interval [-1, 1]',
@@ -29,6 +61,7 @@ export function Graph({
   const containerRef = useRef(null);
   const boardRef = useRef(null);
   const [activeTab, setActiveTab] = useState(0);
+  const isDarkMode = useDarkMode();
 
   // Store callback in ref so event handlers always have access to current version
   const onIntervalChangeRef = useRef(onIntervalChange);
@@ -147,6 +180,11 @@ export function Graph({
       bounds = calculateLegendreBounds();
     }
 
+    // Axis colors based on dark mode
+    const axisColor = isDarkMode ? '#9ca3af' : '#374151';
+    const labelColor = isDarkMode ? '#e5e7eb' : '#374151';
+    const gridColor = isDarkMode ? '#374151' : '#e5e7eb';
+
     // Initialize board with proper settings
     const board = JXG.JSXGraph.initBoard(containerRef.current, {
       boundingbox: bounds,
@@ -164,7 +202,29 @@ export function Graph({
         min: 0.1,
         max: 10
       },
-      grid: true
+      grid: true,
+      defaultAxes: {
+        x: {
+          strokeColor: axisColor,
+          ticks: {
+            strokeColor: axisColor,
+            label: {
+              strokeColor: labelColor,
+              fontSize: 14
+            }
+          }
+        },
+        y: {
+          strokeColor: axisColor,
+          ticks: {
+            strokeColor: axisColor,
+            label: {
+              strokeColor: labelColor,
+              fontSize: 14
+            }
+          }
+        }
+      }
     });
 
     boardRef.current = board;
@@ -188,7 +248,7 @@ export function Graph({
         boardRef.current = null;
       }
     };
-  }, [activeTab, fn, isValid, intervalA, intervalB, degree, quadratureDetails]);
+  }, [activeTab, fn, isValid, intervalA, intervalB, degree, quadratureDetails, isDarkMode]);
 
   // Render the original function view (Tab 1)
   const renderOriginalFunction = (board) => {
@@ -233,6 +293,9 @@ export function Graph({
       });
     }
 
+    // Label background color based on dark mode
+    const labelBgColor = isDarkMode ? 'rgba(75, 85, 99, 0.95)' : 'rgba(255, 255, 255, 0.95)';
+
     // Create draggable endpoint for 'a' - glider constrained to x-axis
     const xAxis = board.defaultAxes.x;
     const sliderA = board.create('glider', [intervalA, 0, xAxis], {
@@ -246,7 +309,7 @@ export function Graph({
         fontSize: 18,
         color: '#1d4ed8',
         fontWeight: 'bold',
-        cssStyle: 'font-weight: bold; text-shadow: 1px 1px 2px white, -1px -1px 2px white, 1px -1px 2px white, -1px 1px 2px white;'
+        cssStyle: `font-weight: bold; background-color: ${labelBgColor}; padding: 2px 6px; border-radius: 4px; border: 1px solid #3b82f6;`
       }
     });
 
@@ -262,7 +325,7 @@ export function Graph({
         fontSize: 18,
         color: '#dc2626',
         fontWeight: 'bold',
-        cssStyle: 'font-weight: bold; text-shadow: 1px 1px 2px white, -1px -1px 2px white, 1px -1px 2px white, -1px 1px 2px white;'
+        cssStyle: `font-weight: bold; background-color: ${labelBgColor}; padding: 2px 6px; border-radius: 4px; border: 1px solid #ef4444;`
       }
     });
 
@@ -378,7 +441,7 @@ export function Graph({
         // Mark node on x-axis (at actual node position, not rectangle center)
         board.create('point', [xi, 0], {
           size: 4,
-          color: '#1f2937',
+          color: isDarkMode ? '#e5e7eb' : '#1f2937',
           name: '',
           fixed: true,
           highlight: false
@@ -410,7 +473,7 @@ export function Graph({
       [1, 1],
       [-1, 1]
     ], {
-      fillColor: '#e0e7ff',
+      fillColor: isDarkMode ? '#312e81' : '#e0e7ff',
       fillOpacity: 0.3,
       strokeColor: '#6366f1',
       strokeWidth: 2,
