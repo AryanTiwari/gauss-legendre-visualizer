@@ -12,6 +12,7 @@ import { FunctionInput } from './components/FunctionInput';
 import { DegreeSelector } from './components/DegreeSelector';
 import { IntervalSliders } from './components/IntervalSliders';
 import { ResultsPanel } from './components/ResultsPanel';
+import { DarkModeToggle } from './components/DarkModeToggle';
 
 function App() {
   const {
@@ -35,16 +36,19 @@ function App() {
   }, [setIntervalA, setIntervalB]);
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
       {/* Header */}
-      <header className="bg-indigo-600 text-white py-4 px-6 shadow-lg">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-2xl font-bold">
-            Gauss-Legendre Quadrature Visualization
-          </h1>
-          <p className="text-indigo-200 text-sm mt-1">
-            Interactive numerical integration explorer
-          </p>
+      <header className="bg-indigo-600 dark:bg-indigo-800 text-white py-4 px-6 shadow-lg">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold">
+              Gauss-Legendre Quadrature Visualization
+            </h1>
+            <p className="text-indigo-200 dark:text-indigo-300 text-sm mt-1">
+              Interactive numerical integration explorer
+            </p>
+          </div>
+          <DarkModeToggle />
         </div>
       </header>
 
@@ -97,19 +101,19 @@ function App() {
         </div>
 
         {/* Educational Info */}
-        <div className="mt-8 bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-lg font-bold text-gray-800 mb-3">
+        <div className="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+          <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-3">
             About Gauss-Legendre Quadrature
           </h2>
-          <div className="prose prose-sm text-gray-600 max-w-none">
+          <div className="prose prose-sm text-gray-600 dark:text-gray-300 max-w-none">
             <p>
-              <strong>Gauss-Legendre quadrature</strong> is a numerical integration technique that
+              <strong className="dark:text-gray-100">Gauss-Legendre quadrature</strong> is a numerical integration technique that
               approximates definite integrals with remarkable accuracy. Unlike simple methods like
               the trapezoidal rule or Simpson's rule which use equally-spaced points, Gauss-Legendre
               strategically places evaluation points (nodes) at the roots of Legendre polynomials.
             </p>
             <p className="mt-2">
-              <strong>Key properties:</strong>
+              <strong className="dark:text-gray-100">Key properties:</strong>
             </p>
             <ul className="mt-1 list-disc list-inside">
               <li>
@@ -126,7 +130,7 @@ function App() {
               </li>
             </ul>
             <p className="mt-2">
-              <strong>Visualization:</strong> The colored rectangles show how each quadrature point
+              <strong className="dark:text-gray-100">Visualization:</strong> The colored rectangles show how each quadrature point
               contributes to the integral. Each rectangle is centered at a node xᵢ, has width
               proportional to its weight wᵢ, and height equal to f(xᵢ). The sum of these rectangle
               areas approximates the integral.
@@ -136,7 +140,7 @@ function App() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-gray-800 text-gray-400 py-4 px-6 mt-8">
+      <footer className="bg-gray-800 dark:bg-gray-950 text-gray-400 py-4 px-6 mt-8">
         <div className="max-w-7xl mx-auto text-center text-sm">
           <p>
             Gauss-Legendre Quadrature Visualization | Built with React, JSXGraph, and KaTeX

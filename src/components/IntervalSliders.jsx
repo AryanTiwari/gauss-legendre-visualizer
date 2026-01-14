@@ -53,15 +53,15 @@ export function IntervalSliders({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-4">
-      <label className="block text-sm font-medium text-gray-700 mb-2">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
         Integration Interval [a, b]
       </label>
 
       <div className="flex gap-4 items-center">
         {/* Input A */}
         <div className="flex-1">
-          <label className="block text-xs text-gray-500 mb-1">
+          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
             Lower bound (a)
           </label>
           <input
@@ -69,16 +69,16 @@ export function IntervalSliders({
             step="0.1"
             value={inputA}
             onChange={(e) => handleChangeA(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
 
         {/* Separator */}
-        <span className="text-gray-400 text-xl mt-5">to</span>
+        <span className="text-gray-400 dark:text-gray-500 text-xl mt-5">to</span>
 
         {/* Input B */}
         <div className="flex-1">
-          <label className="block text-xs text-gray-500 mb-1">
+          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
             Upper bound (b)
           </label>
           <input
@@ -86,14 +86,14 @@ export function IntervalSliders({
             step="0.1"
             value={inputB}
             onChange={(e) => handleChangeB(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
       </div>
 
       {/* Error message */}
       {error && (
-        <p className="mt-2 text-sm text-red-600">{error}</p>
+        <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>
       )}
     </div>
   );
