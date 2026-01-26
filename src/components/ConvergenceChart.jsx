@@ -101,11 +101,12 @@ export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode }
       });
       // Show labels at every 2nd power to avoid clutter
       if (y % 2 === 0) {
-        board.create('text', [-0.3, y, toSuperscript(y)], {
-          fontSize: 11,
+        board.create('text', [-0.3, y, `10<sup>${y}</sup>`], {
+          fontSize: 13,
           color: axisColor,
           fixed: true,
-          anchorX: 'right'
+          anchorX: 'right',
+          display: 'html'
         });
       }
     }

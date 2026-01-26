@@ -5,7 +5,7 @@
  * common mathematical functions.
  */
 
-import { compile, evaluate } from 'mathjs';
+import { compile, evaluate, parse } from 'mathjs';
 
 // Supported functions documentation
 export const SUPPORTED_FUNCTIONS = [
@@ -92,38 +92,20 @@ export function evaluateAt(fn, x) {
 }
 
 /**
- * Convert a math expression to a LaTeX string
- * This is a simple conversion - for complex expressions, consider a dedicated parser
+ * Convert a math expression to a LaTeX string using mathjs's built-in parser.
+ * This handles all cases correctly including negative exponents (e^-x).
  * @param {string} expression - Math expression
  * @returns {string} LaTeX string
  */
 export function toLatex(expression) {
   if (!expression) return '';
 
-  let latex = expression;
-
-  // Replace common patterns with LaTeX equivalents
-  latex = latex.replace(/\*\*/g, '^'); // ** to ^
-  latex = latex.replace(/\*/g, ' \\cdot '); // * to ·
-  latex = latex.replace(/sqrt\(([^)]+)\)/g, '\\sqrt{$1}'); // sqrt(x) to \sqrt{x}
-  latex = latex.replace(/sin\(/g, '\\sin(');
-  latex = latex.replace(/cos\(/g, '\\cos(');
-  latex = latex.replace(/tan\(/g, '\\tan(');
-  latex = latex.replace(/asin\(/g, '\\arcsin(');
-  latex = latex.replace(/acos\(/g, '\\arccos(');
-  latex = latex.replace(/atan\(/g, '\\arctan(');
-  latex = latex.replace(/exp\(([^)]+)\)/g, 'e^{$1}'); // exp(x) to e^{x}
-  latex = latex.replace(/log\(/g, '\\ln(');
-  latex = latex.replace(/log10\(/g, '\\log_{10}(');
-  latex = latex.replace(/abs\(([^)]+)\)/g, '|$1|'); // abs(x) to |x|
-  latex = latex.replace(/pi/g, '\\pi');
-  latex = latex.replace(/\^(\d+)/g, '^{$1}'); // x^2 to x^{2}
-  latex = latex.replace(/\^([a-z])/g, '^{$1}'); // x^n to x^{n}
-
-  // Handle fractions like 1/(...)
-  latex = latex.replace(/(\d+)\/\(([^)]+)\)/g, '\\frac{$1}{$2}');
-
-  return latex;
+  try {
+    const node = parse(expression);
+    return node.toTex({ parenthesis: 'keep', implicit: 'hide' });
+  } catch {
+    return expression;
+  }
 }
 
 /**

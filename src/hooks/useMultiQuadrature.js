@@ -128,7 +128,7 @@ export function useMultiQuadrature(
         }
         return next;
       }
-      return [...prev, methodId];
+      return METHOD_IDS.filter(id => prev.includes(id) || id === methodId);
     });
   }, [activeMethod]);
 
