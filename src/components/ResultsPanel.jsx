@@ -147,6 +147,9 @@ export function ResultsPanel({
             </tbody>
           </table>
         </div>
+        <p className="mt-1.5 text-xs text-gray-400 dark:text-gray-500 text-center">
+          Click a method to toggle it on or off
+        </p>
       </div>
 
       {/* Detail Tabs */}

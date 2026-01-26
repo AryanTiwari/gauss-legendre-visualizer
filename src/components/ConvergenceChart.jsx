@@ -57,9 +57,9 @@ export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode }
     const labelColor = isDarkMode ? '#e5e7eb' : '#374151';
     const bgText = isDarkMode ? '#d1d5db' : '#4b5563';
 
-    // Fixed y-axis range: 10^-17 to 10^4
+    // Fixed y-axis range: 10^-17 to 10^2
     const minLog = -17;
-    const maxLog = 4;
+    const maxLog = 2;
 
     const board = JXG.JSXGraph.initBoard(containerRef.current, {
       boundingbox: [-2.0, maxLog + 1.5, 11.5, minLog - 1.5],
@@ -82,7 +82,7 @@ export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode }
         highlight: false
       });
       board.create('text', [n, minLog - 0.5, `${n}`], {
-        fontSize: 12,
+        fontSize: 14,
         color: axisColor,
         fixed: true,
         anchorX: 'middle'
@@ -102,7 +102,7 @@ export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode }
       // Show labels at every 2nd power to avoid clutter
       if (y % 2 === 0) {
         board.create('text', [-0.3, y, `10<sup>${y}</sup>`], {
-          fontSize: 13,
+          fontSize: 14,
           color: axisColor,
           fixed: true,
           anchorX: 'right',
@@ -128,8 +128,8 @@ export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode }
     });
 
     // Y-axis label (rotated)
-    board.create('text', [-1.5, (minLog + maxLog) / 2, 'Error'], {
-      fontSize: 13,
+    board.create('text', [-1.3, (minLog + maxLog) / 2, 'Error'], {
+      fontSize: 15,
       color: bgText,
       fixed: true,
       anchorX: 'middle',
@@ -137,8 +137,8 @@ export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode }
     });
 
     // X-axis label
-    board.create('text', [5.5, minLog - 1, 'Number of points (n)'], {
-      fontSize: 13,
+    board.create('text', [5.5, minLog - 1.3, 'Number of points (n)'], {
+      fontSize: 15,
       color: bgText,
       fixed: true,
       anchorX: 'middle'
@@ -193,30 +193,30 @@ export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode }
       }
     }
 
-    // Legend
-    let legendY = maxLog - 0.3;
+    // Legend (bottom-left)
+    let legendY = minLog + 0.5 + enabledMethods.length * 0.8;
     for (const methodId of enabledMethods) {
       const method = QUADRATURE_METHODS[methodId];
-      board.create('segment', [[7.5, legendY], [8.5, legendY]], {
+      board.create('segment', [[1, legendY], [1.8, legendY]], {
         strokeColor: method.color,
         strokeWidth: 2.5,
         fixed: true,
         highlight: false
       });
-      board.create('point', [8, legendY], {
+      board.create('point', [1.4, legendY], {
         size: 2,
         color: method.color,
         name: '',
         fixed: true,
         highlight: false
       });
-      board.create('text', [8.7, legendY, method.shortName], {
+      board.create('text', [2.0, legendY, method.shortName], {
         fontSize: 11,
         color: method.color,
         fixed: true,
         anchorX: 'left'
       });
-      legendY -= 0.7;
+      legendY -= 0.8;
     }
 
     return () => {

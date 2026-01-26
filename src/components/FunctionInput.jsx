@@ -96,7 +96,6 @@ export function FunctionInput({
               key={i}
               onClick={() => {
                 onChange(ex.expr);
-                setShowExamples(false);
               }}
               className="px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 hover:bg-indigo-100 dark:hover:bg-indigo-900 rounded-lg text-left transition-colors dark:text-white"
             >

@@ -49,18 +49,18 @@ const EDUCATIONAL_CONTENT = {
     ]
   },
   chebyshev: {
-    title: 'Chebyshev (Clenshaw-Curtis)',
+    title: 'Chebyshev Quadrature',
     formula: 'Nodes at xi = cos((2k-1)pi/(2n)), roots of the Chebyshev polynomial Tn(x).',
     explanation:
-      'Clenshaw-Curtis quadrature uses Chebyshev polynomial roots as nodes. ' +
+      'Chebyshev quadrature uses Chebyshev polynomial roots as nodes. ' +
       'These nodes cluster near the endpoints of [-1, 1], which counteracts ' +
       'the Runge phenomenon that plagues equally spaced nodes. The weights are ' +
       'computed to integrate the interpolating polynomial exactly.',
     convergence:
-      'For analytic functions, Clenshaw-Curtis converges exponentially, ' +
+      'For analytic functions, Chebyshev quadrature converges exponentially, ' +
       'often nearly as fast as Gauss-Legendre. The practical difference ' +
-      'between Gauss-Legendre and Clenshaw-Curtis is usually small, but ' +
-      'Clenshaw-Curtis has the advantage of nested point sets (useful for adaptive methods).',
+      'between Gauss-Legendre and Chebyshev is usually small, but ' +
+      'Chebyshev has the advantage of nested point sets (useful for adaptive methods).',
     keyFacts: [
       'Nodes cluster near endpoints (reduces interpolation error)',
       'Avoids Runge phenomenon unlike equally spaced',

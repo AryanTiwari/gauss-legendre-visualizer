@@ -102,7 +102,7 @@ export function toLatex(expression) {
 
   try {
     const node = parse(expression);
-    return node.toTex({ parenthesis: 'keep', implicit: 'hide' });
+    return node.toTex({ parenthesis: 'auto', implicit: 'hide' });
   } catch {
     return expression;
   }
