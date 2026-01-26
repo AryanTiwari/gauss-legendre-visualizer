@@ -50,28 +50,12 @@ export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode }
     const labelColor = isDarkMode ? '#e5e7eb' : '#374151';
     const bgText = isDarkMode ? '#d1d5db' : '#4b5563';
 
-    // Determine y-axis range from data
-    let minLog = 0;
-    let maxLog = 0;
-    for (const methodId of enabledMethods) {
-      const points = convergenceData.data[methodId];
-      if (!points) continue;
-      for (const p of points) {
-        if (p.error > 0) {
-          const logErr = Math.log10(p.error);
-          if (logErr < minLog) minLog = logErr;
-          if (logErr > maxLog) maxLog = logErr;
-        }
-      }
-    }
-
-    // Pad the y range
-    const yPad = Math.max(1, (maxLog - minLog) * 0.15);
-    minLog = Math.floor(minLog - yPad);
-    maxLog = Math.ceil(maxLog + yPad);
+    // Fixed y-axis range: 10^-17 to 10^4
+    const minLog = -17;
+    const maxLog = 4;
 
     const board = JXG.JSXGraph.initBoard(containerRef.current, {
-      boundingbox: [0, maxLog, 11, minLog],
+      boundingbox: [-2.5, maxLog + 1.5, 11.5, minLog - 1.5],
       axis: false,
       showNavigation: false,
       showCopyright: false,
@@ -90,7 +74,7 @@ export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode }
         fixed: true,
         highlight: false
       });
-      board.create('text', [n, minLog - 0.3, `${n}`], {
+      board.create('text', [n, minLog - 0.5, `${n}`], {
         fontSize: 12,
         color: axisColor,
         fixed: true,
@@ -99,22 +83,44 @@ export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode }
     }
 
     for (let y = Math.ceil(minLog); y <= Math.floor(maxLog); y++) {
+      const isZeroLine = y === 0;
       board.create('segment', [[0.5, y], [10.5, y]], {
-        strokeColor: isDarkMode ? '#374151' : '#e5e7eb',
-        strokeWidth: 1,
+        strokeColor: isZeroLine
+          ? (isDarkMode ? '#9ca3af' : '#6b7280')
+          : (isDarkMode ? '#374151' : '#e5e7eb'),
+        strokeWidth: isZeroLine ? 2.5 : 1,
         fixed: true,
         highlight: false
       });
-      board.create('text', [0.3, y, `10^${y}`], {
-        fontSize: 11,
-        color: axisColor,
-        fixed: true,
-        anchorX: 'right'
-      });
+      // Show labels at every 2nd power to avoid clutter
+      if (y % 2 === 0) {
+        board.create('text', [-0.3, y, `10^${y}`], {
+          fontSize: 11,
+          color: axisColor,
+          fixed: true,
+          anchorX: 'right'
+        });
+      }
     }
 
+    // Prominent y-axis line
+    board.create('segment', [[0.5, minLog], [0.5, maxLog]], {
+      strokeColor: isDarkMode ? '#9ca3af' : '#374151',
+      strokeWidth: 2,
+      fixed: true,
+      highlight: false
+    });
+
+    // Prominent x-axis line (bottom border)
+    board.create('segment', [[0.5, minLog], [10.5, minLog]], {
+      strokeColor: isDarkMode ? '#9ca3af' : '#374151',
+      strokeWidth: 2,
+      fixed: true,
+      highlight: false
+    });
+
     // Axis labels
-    board.create('text', [5.5, minLog - 0.8, 'Number of points (n)'], {
+    board.create('text', [5.5, minLog - 1, 'Number of points (n)'], {
       fontSize: 13,
       color: bgText,
       fixed: true,

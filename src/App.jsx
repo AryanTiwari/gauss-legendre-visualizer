@@ -14,7 +14,6 @@ import { IntervalSliders } from './components/IntervalSliders';
 import { ResultsPanel } from './components/ResultsPanel';
 import { DarkModeToggle } from './components/DarkModeToggle';
 import { MethodSelector } from './components/MethodSelector';
-import { RandomControls } from './components/RandomControls';
 import { AboutSection } from './components/AboutSection';
 
 function App() {
@@ -90,14 +89,6 @@ function App() {
               onToggle={toggleMethod}
             />
 
-            {enabledMethods.includes('random') && (
-              <RandomControls
-                seed={randomSeed}
-                onSeedChange={setRandomSeed}
-                onReshuffle={reshuffleRandom}
-              />
-            )}
-
             <AboutSection />
           </div>
 
@@ -113,6 +104,9 @@ function App() {
               isValid={isValid}
               degree={degree}
               convergenceData={convergenceData}
+              randomSeed={randomSeed}
+              onRandomSeedChange={setRandomSeed}
+              onReshuffle={reshuffleRandom}
             />
           </div>
 

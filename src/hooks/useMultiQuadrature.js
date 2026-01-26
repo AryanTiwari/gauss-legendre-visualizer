@@ -113,7 +113,7 @@ export function useMultiQuadrature(
   }, []);
 
   const reshuffleRandom = useCallback(() => {
-    setRandomSeed(prev => prev + 1);
+    setRandomSeed(Math.floor(Math.random() * 100) + 1);
   }, []);
 
   const toggleMethod = useCallback((methodId) => {

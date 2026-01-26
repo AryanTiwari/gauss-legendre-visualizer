@@ -50,7 +50,10 @@ export function Graph({
   onIntervalChange,
   isValid,
   degree,
-  convergenceData
+  convergenceData,
+  randomSeed,
+  onRandomSeedChange,
+  onReshuffle
 }) {
   const containerRef = useRef(null);
   const boardRef = useRef(null);
@@ -304,49 +307,83 @@ export function Graph({
       strokeColor: methodColor, strokeWidth: 2, highlight: false
     });
 
-    // Quadrature rectangles
+    // Quadrature visualization
     const details = result.details;
     if (details && details.length > 0) {
-      // Generate colors from method color with varying opacity
       const baseColor = methodColor;
 
-      let currentX = -1;
+      if (methodId === 'equallySpaced' && details.length > 1) {
+        // Draw trapezoids between consecutive nodes (composite trapezoid rule)
+        for (let i = 0; i < details.length - 1; i++) {
+          const xi = details[i].originalNode;
+          const xi1 = details[i + 1].originalNode;
+          const yi = transformedFn(xi);
+          const yi1 = transformedFn(xi1);
 
-      details.forEach((detail, i) => {
-        const xi = detail.originalNode;
-        const wi = detail.originalWeight;
-        const y = transformedFn(xi);
+          if (!isFinite(yi) || !isFinite(yi1)) continue;
 
-        if (!isFinite(y) || !isFinite(wi)) return;
+          const opacity = i % 2 === 0 ? 0.5 : 0.35;
 
-        const leftX = currentX;
-        const rightX = currentX + wi;
+          board.create('polygon', [
+            [xi, 0], [xi1, 0], [xi1, yi1], [xi, yi]
+          ], {
+            fillColor: baseColor, fillOpacity: opacity,
+            strokeColor: baseColor, strokeWidth: 1,
+            highlight: false, vertices: { visible: false }, hasInnerPoints: false
+          });
+        }
 
-        // Alternate opacity for readability
-        const opacity = i % 2 === 0 ? 0.5 : 0.35;
+        // Draw nodes and function points
+        details.forEach((detail) => {
+          const xi = detail.originalNode;
+          const y = transformedFn(xi);
+          if (!isFinite(y)) return;
 
-        board.create('polygon', [
-          [leftX, 0], [rightX, 0], [rightX, y], [leftX, y]
-        ], {
-          fillColor: baseColor, fillOpacity: opacity,
-          strokeColor: baseColor, strokeWidth: 1,
-          highlight: false, vertices: { visible: false }, hasInnerPoints: false
+          board.create('point', [xi, 0], {
+            size: 4, color: isDarkMode ? '#e5e7eb' : '#1f2937',
+            name: '', fixed: true, highlight: false
+          });
+          board.create('point', [xi, y], {
+            size: 3, color: baseColor,
+            name: '', fixed: true, highlight: false
+          });
         });
+      } else {
+        // Weighted rectangles for other methods
+        let currentX = -1;
 
-        // Node on x-axis
-        board.create('point', [xi, 0], {
-          size: 4, color: isDarkMode ? '#e5e7eb' : '#1f2937',
-          name: '', fixed: true, highlight: false
+        details.forEach((detail, i) => {
+          const xi = detail.originalNode;
+          const wi = detail.originalWeight;
+          const y = transformedFn(xi);
+
+          if (!isFinite(y) || !isFinite(wi)) return;
+
+          const leftX = currentX;
+          const rightX = currentX + wi;
+
+          const opacity = i % 2 === 0 ? 0.5 : 0.35;
+
+          board.create('polygon', [
+            [leftX, 0], [rightX, 0], [rightX, y], [leftX, y]
+          ], {
+            fillColor: baseColor, fillOpacity: opacity,
+            strokeColor: baseColor, strokeWidth: 1,
+            highlight: false, vertices: { visible: false }, hasInnerPoints: false
+          });
+
+          board.create('point', [xi, 0], {
+            size: 4, color: isDarkMode ? '#e5e7eb' : '#1f2937',
+            name: '', fixed: true, highlight: false
+          });
+          board.create('point', [xi, y], {
+            size: 3, color: baseColor,
+            name: '', fixed: true, highlight: false
+          });
+
+          currentX = rightX;
         });
-
-        // Point on function
-        board.create('point', [xi, y], {
-          size: 3, color: baseColor,
-          name: '', fixed: true, highlight: false
-        });
-
-        currentX = rightX;
-      });
+      }
     }
   };
 
@@ -382,7 +419,9 @@ export function Graph({
             <span>{method.name}</span>
           </span>
           <span className="ml-4 text-gray-400 dark:text-gray-500">
-            | Transformed to [-1, 1] &mdash; rectangles show weighted contributions (widths = weights)
+            | Transformed to [-1, 1] &mdash; {activeTab === 'equallySpaced'
+              ? 'trapezoids show composite trapezoid rule'
+              : 'rectangles show weighted contributions (widths = weights)'}
           </span>
         </>
       );
@@ -433,12 +472,42 @@ export function Graph({
           isDarkMode={isDarkMode}
         />
       ) : (
-        <div
-          ref={containerRef}
-          id="jxgbox"
-          className="jxgbox w-full"
-          style={{ aspectRatio: '1/1', minHeight: '400px' }}
-        />
+        <div className="relative">
+          <div
+            ref={containerRef}
+            id="jxgbox"
+            className="jxgbox w-full"
+            style={{ aspectRatio: '1/1', minHeight: '400px' }}
+          />
+          {activeTab === 'random' && (
+            <div className="absolute top-3 right-3 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg border border-gray-200 dark:border-gray-700 p-3 shadow-lg z-10 min-w-[160px]">
+              <div className="flex items-center gap-2 mb-2">
+                <label className="text-xs text-gray-500 dark:text-gray-400">Seed</label>
+                <input
+                  type="number"
+                  step="1"
+                  value={randomSeed}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    if (!isNaN(val)) onRandomSeedChange(val);
+                  }}
+                  className="w-16 px-2 py-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded text-xs font-mono text-center"
+                />
+              </div>
+              <button
+                onClick={onReshuffle}
+                className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-md hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors text-xs font-medium"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
+                </svg>
+                Reshuffle
+              </button>
+            </div>
+          )}
+        </div>
       )}
 
       {/* Description bar */}
