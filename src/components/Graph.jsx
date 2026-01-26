@@ -1,25 +1,24 @@
 /**
  * Interactive Graph Component using JSXGraph
  *
- * Displays three different visualizations via tabs:
- * 1. Original function with shaded integral area
- * 2. Transformed function on [-1, 1] with quadrature rectangles
- * 3. Legendre polynomial with marked roots
+ * Displays visualizations via dynamic tabs:
+ * - "Original" tab: function with shaded integral area + draggable bounds
+ * - One tab per enabled quadrature method: [-1,1] transformed view with nodes/rectangles
+ * - "Convergence" tab: error vs n chart for all methods
  */
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import JXG from 'jsxgraph';
-import { getNodesAndWeights, evaluateLegendre } from '../utils/gaussLegendre';
+import { QUADRATURE_METHODS } from '../utils/quadrature/index.js';
+import { evaluateLegendre } from '../utils/quadrature/gaussLegendre.js';
+import { ConvergenceChart } from './ConvergenceChart.jsx';
 
 // Hook to detect dark mode
 function useDarkMode() {
   const getInitialDarkMode = () => {
-    // Check localStorage first (same logic as DarkModeToggle)
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('darkMode');
-      if (stored !== null) {
-        return stored === 'true';
-      }
+      if (stored !== null) return stored === 'true';
       return window.matchMedia('(prefers-color-scheme: dark)').matches;
     }
     return false;
@@ -35,7 +34,6 @@ function useDarkMode() {
         }
       });
     });
-
     observer.observe(document.documentElement, { attributes: true });
     return () => observer.disconnect();
   }, []);
@@ -43,46 +41,56 @@ function useDarkMode() {
   return isDark;
 }
 
-const TAB_LABELS = [
-  'Original Function',
-  'Standard Interval [-1, 1]',
-  'Legendre Polynomial'
-];
-
 export function Graph({
   fn,
   intervalA,
   intervalB,
-  quadratureDetails,
+  allResults,
+  enabledMethods,
   onIntervalChange,
   isValid,
-  degree
+  degree,
+  convergenceData
 }) {
   const containerRef = useRef(null);
   const boardRef = useRef(null);
-  const [activeTab, setActiveTab] = useState(0);
+  const [activeTab, setActiveTab] = useState('original');
   const isDarkMode = useDarkMode();
 
-  // Store callback in ref so event handlers always have access to current version
   const onIntervalChangeRef = useRef(onIntervalChange);
   onIntervalChangeRef.current = onIntervalChange;
 
-  // Debounce timer for drag updates
   const dragTimeoutRef = useRef(null);
 
-  // Calculate bounding box for original function view
+  // Build tab list dynamically
+  const tabs = useMemo(() => {
+    const list = [{ id: 'original', label: 'Original Function' }];
+    for (const methodId of enabledMethods) {
+      const method = QUADRATURE_METHODS[methodId];
+      list.push({ id: methodId, label: method.shortName });
+    }
+    list.push({ id: 'convergence', label: 'Convergence' });
+    return list;
+  }, [enabledMethods]);
+
+  // Reset to 'original' tab if current tab is no longer available
+  useEffect(() => {
+    if (!tabs.find(t => t.id === activeTab)) {
+      setActiveTab('original');
+    }
+  }, [tabs, activeTab]);
+
+  // Bounding box calculations
   const calculateOriginalBounds = useCallback(() => {
     const padding = Math.max(1, (intervalB - intervalA) * 0.2);
     let xMin = intervalA - padding;
     let xMax = intervalB + padding;
-
     let yMin = -1;
     let yMax = 1;
 
     if (fn && isValid) {
       const samples = 100;
       const step = (intervalB - intervalA) / samples;
-
       for (let i = 0; i <= samples; i++) {
         const x = intervalA + i * step;
         const y = fn(x);
@@ -91,13 +99,11 @@ export function Graph({
           if (y > yMax) yMax = y;
         }
       }
-
       const yPadding = Math.max(0.5, (yMax - yMin) * 0.2);
       yMin -= yPadding;
       yMax += yPadding;
     }
 
-    // Ensure equal x and y ranges for 1:1 aspect ratio
     const xRange = xMax - xMin;
     const yRange = yMax - yMin;
     if (xRange > yRange) {
@@ -109,20 +115,16 @@ export function Graph({
       xMin -= diff;
       xMax += diff;
     }
-
     return [xMin, yMax, xMax, yMin];
   }, [fn, intervalA, intervalB, isValid]);
 
-  // Calculate bounding box for standard interval [-1, 1]
   const calculateStandardBounds = useCallback(() => {
     let xMin = -1.5;
     let xMax = 1.5;
-
     let yMin = -1;
     let yMax = 1;
 
     if (fn && isValid) {
-      // Sample transformed function on [-1, 1]
       for (let i = 0; i <= 100; i++) {
         const xi = -1 + 2 * i / 100;
         const x = ((intervalB - intervalA) / 2) * xi + (intervalA + intervalB) / 2;
@@ -132,13 +134,11 @@ export function Graph({
           if (y > yMax) yMax = y;
         }
       }
-
       const yPadding = Math.max(0.5, (yMax - yMin) * 0.2);
       yMin -= yPadding;
       yMax += yPadding;
     }
 
-    // Ensure equal x and y ranges for 1:1 aspect ratio
     const xRange = xMax - xMin;
     const yRange = yMax - yMin;
     if (xRange > yRange) {
@@ -150,19 +150,13 @@ export function Graph({
       xMin -= diff;
       xMax += diff;
     }
-
     return [xMin, yMax, xMax, yMin];
   }, [fn, intervalA, intervalB, isValid]);
 
-  // Calculate bounding box for Legendre polynomial
-  const calculateLegendreBounds = useCallback(() => {
-    // Equal ranges for 1:1 aspect ratio: [-1.5, 1.5] on both axes
-    return [-1.5, 1.5, 1.5, -1.5];
-  }, []);
-
-  // Initialize and update the board
+  // Render JSXGraph board for non-convergence tabs
   useEffect(() => {
     if (!containerRef.current) return;
+    if (activeTab === 'convergence') return; // convergence uses its own component
 
     // Clean up existing board
     if (boardRef.current) {
@@ -170,170 +164,97 @@ export function Graph({
       boardRef.current = null;
     }
 
-    // Calculate bounds based on active tab
-    let bounds;
-    if (activeTab === 0) {
-      bounds = calculateOriginalBounds();
-    } else if (activeTab === 1) {
-      bounds = calculateStandardBounds();
-    } else {
-      bounds = calculateLegendreBounds();
-    }
+    const bounds = activeTab === 'original'
+      ? calculateOriginalBounds()
+      : calculateStandardBounds();
 
-    // Axis colors based on dark mode
     const axisColor = isDarkMode ? '#9ca3af' : '#374151';
     const labelColor = isDarkMode ? '#e5e7eb' : '#374151';
-    const gridColor = isDarkMode ? '#374151' : '#e5e7eb';
 
-    // Initialize board with proper settings
     const board = JXG.JSXGraph.initBoard(containerRef.current, {
       boundingbox: bounds,
       axis: true,
       showNavigation: false,
       showCopyright: false,
-      pan: {
-        enabled: true,
-        needTwoFingers: false,
-        needShift: false
-      },
-      zoom: {
-        wheel: true,
-        needShift: false,
-        min: 0.1,
-        max: 10
-      },
+      pan: { enabled: true, needTwoFingers: false, needShift: false },
+      zoom: { wheel: true, needShift: false, min: 0.1, max: 10 },
       grid: true,
       defaultAxes: {
         x: {
           strokeColor: axisColor,
-          ticks: {
-            strokeColor: axisColor,
-            label: {
-              strokeColor: labelColor,
-              fontSize: 14
-            }
-          }
+          ticks: { strokeColor: axisColor, label: { strokeColor: labelColor, fontSize: 14 } }
         },
         y: {
           strokeColor: axisColor,
-          ticks: {
-            strokeColor: axisColor,
-            label: {
-              strokeColor: labelColor,
-              fontSize: 14
-            }
-          }
+          ticks: { strokeColor: axisColor, label: { strokeColor: labelColor, fontSize: 14 } }
         }
       }
     });
 
     boardRef.current = board;
 
-    // Render based on active tab
-    if (activeTab === 0) {
+    if (activeTab === 'original') {
       renderOriginalFunction(board);
-    } else if (activeTab === 1) {
-      renderTransformedFunction(board);
     } else {
-      renderLegendrePolynomial(board);
+      renderMethodView(board, activeTab);
     }
 
     return () => {
-      // Clear any pending drag timeout
-      if (dragTimeoutRef.current) {
-        clearTimeout(dragTimeoutRef.current);
-      }
+      if (dragTimeoutRef.current) clearTimeout(dragTimeoutRef.current);
       if (boardRef.current) {
         JXG.JSXGraph.freeBoard(boardRef.current);
         boardRef.current = null;
       }
     };
-  }, [activeTab, fn, isValid, intervalA, intervalB, degree, quadratureDetails, isDarkMode]);
+  }, [activeTab, fn, isValid, intervalA, intervalB, degree, allResults, isDarkMode, enabledMethods]);
 
-  // Render the original function view (Tab 1)
+  // --- Render functions ---
+
   const renderOriginalFunction = (board) => {
     if (!fn || !isValid) return;
 
-    // Plot the function curve (extending beyond the interval for context)
     board.create('functiongraph', [
-      (x) => {
-        const y = fn(x);
-        return isFinite(y) ? y : NaN;
-      }
-    ], {
-      strokeColor: '#6366f1',
-      strokeWidth: 2,
-      highlight: false
-    });
+      (x) => { const y = fn(x); return isFinite(y) ? y : NaN; }
+    ], { strokeColor: '#6366f1', strokeWidth: 2, highlight: false });
 
-    // Create shaded area under the curve between a and b
+    // Shaded area
     const samplePoints = [];
     const numSamples = 200;
     for (let i = 0; i <= numSamples; i++) {
       const x = intervalA + (intervalB - intervalA) * i / numSamples;
       const y = fn(x);
-      if (isFinite(y)) {
-        samplePoints.push([x, y]);
-      }
+      if (isFinite(y)) samplePoints.push([x, y]);
     }
-    // Close the polygon along the x-axis
     samplePoints.push([intervalB, 0]);
     samplePoints.push([intervalA, 0]);
 
     if (samplePoints.length > 2) {
       board.create('polygon', samplePoints, {
-        fillColor: '#6366f1',
-        fillOpacity: 0.2,
-        strokeColor: '#6366f1',
-        strokeWidth: 0,
-        highlight: false,
-        fixed: true,
-        vertices: { visible: false, fixed: true },
-        hasInnerPoints: false
+        fillColor: '#6366f1', fillOpacity: 0.2, strokeColor: '#6366f1', strokeWidth: 0,
+        highlight: false, fixed: true, vertices: { visible: false, fixed: true }, hasInnerPoints: false
       });
     }
 
-    // Label background color based on dark mode
     const labelBgColor = isDarkMode ? 'rgba(75, 85, 99, 0.95)' : 'rgba(255, 255, 255, 0.95)';
 
-    // Create draggable endpoint for 'a' - glider constrained to x-axis
     const xAxis = board.defaultAxes.x;
     const sliderA = board.create('glider', [intervalA, 0, xAxis], {
-      name: 'a',
-      size: 8,
-      color: '#3b82f6',
-      strokeColor: '#1d4ed8',
-      strokeWidth: 2,
+      name: 'a', size: 8, color: '#3b82f6', strokeColor: '#1d4ed8', strokeWidth: 2,
       label: {
-        offset: [0, -25],
-        fontSize: 18,
-        color: '#1d4ed8',
-        fontWeight: 'bold',
+        offset: [0, -25], fontSize: 18, color: '#1d4ed8', fontWeight: 'bold',
         cssStyle: `font-weight: bold; background-color: ${labelBgColor}; padding: 2px 6px; border-radius: 4px; border: 1px solid #3b82f6;`
       }
     });
-
-    // Create draggable endpoint for 'b' - glider constrained to x-axis
     const sliderB = board.create('glider', [intervalB, 0, xAxis], {
-      name: 'b',
-      size: 8,
-      color: '#ef4444',
-      strokeColor: '#dc2626',
-      strokeWidth: 2,
+      name: 'b', size: 8, color: '#ef4444', strokeColor: '#dc2626', strokeWidth: 2,
       label: {
-        offset: [0, -25],
-        fontSize: 18,
-        color: '#dc2626',
-        fontWeight: 'bold',
+        offset: [0, -25], fontSize: 18, color: '#dc2626', fontWeight: 'bold',
         cssStyle: `font-weight: bold; background-color: ${labelBgColor}; padding: 2px 6px; border-radius: 4px; border: 1px solid #ef4444;`
       }
     });
 
-    // Debounced update - triggers 150ms after last drag movement
     const scheduleUpdate = () => {
-      if (dragTimeoutRef.current) {
-        clearTimeout(dragTimeoutRef.current);
-      }
+      if (dragTimeoutRef.current) clearTimeout(dragTimeoutRef.current);
       dragTimeoutRef.current = setTimeout(() => {
         const newA = sliderA.X();
         const newB = sliderB.X();
@@ -347,9 +268,14 @@ export function Graph({
     sliderB.on('drag', scheduleUpdate);
   };
 
-  // Render the transformed function view (Tab 2)
-  const renderTransformedFunction = (board) => {
+  const renderMethodView = (board, methodId) => {
     if (!fn || !isValid) return;
+
+    const method = QUADRATURE_METHODS[methodId];
+    const result = allResults?.[methodId];
+    if (!method || !result) return;
+
+    const methodColor = method.color;
 
     // Transform function to [-1, 1]
     const transformedFn = (xi) => {
@@ -358,261 +284,165 @@ export function Graph({
       return isFinite(y) ? y : NaN;
     };
 
-    // Draw vertical shaded strips at x = -1 and x = 1 to mark the interval
-    // These extend the full height of the visible graph
+    // Interval boundary lines
     board.create('line', [[-1, 0], [-1, 1]], {
-      strokeColor: '#6366f1',
-      strokeWidth: 3,
-      fixed: true,
-      highlight: false
+      strokeColor: methodColor, strokeWidth: 3, fixed: true, highlight: false
     });
     board.create('line', [[1, 0], [1, 1]], {
-      strokeColor: '#6366f1',
-      strokeWidth: 3,
-      fixed: true,
-      highlight: false
+      strokeColor: methodColor, strokeWidth: 3, fixed: true, highlight: false
     });
 
-    // Add labels at x = -1 and x = 1 at the top
     board.create('text', [-1.05, 0.1, '-1'], {
-      fontSize: 14,
-      color: '#6366f1',
-      fixed: true,
-      anchorX: 'right'
+      fontSize: 14, color: methodColor, fixed: true, anchorX: 'right'
     });
     board.create('text', [1.05, 0.1, '1'], {
-      fontSize: 14,
-      color: '#6366f1',
-      fixed: true,
-      anchorX: 'left'
+      fontSize: 14, color: methodColor, fixed: true, anchorX: 'left'
     });
 
-    // Plot the transformed function curve
+    // Function curve
     board.create('functiongraph', [transformedFn], {
-      strokeColor: '#6366f1',
-      strokeWidth: 2,
-      highlight: false
+      strokeColor: methodColor, strokeWidth: 2, highlight: false
     });
 
-    // Draw quadrature rectangles - adjacent, spanning exactly [-1, 1]
-    if (quadratureDetails && quadratureDetails.length > 0) {
-      const colors = [
-        'rgba(59, 130, 246, 0.5)',   // blue
-        'rgba(16, 185, 129, 0.5)',   // green
-        'rgba(245, 158, 11, 0.5)',   // amber
-        'rgba(239, 68, 68, 0.5)',    // red
-        'rgba(139, 92, 246, 0.5)',   // purple
-        'rgba(236, 72, 153, 0.5)',   // pink
-        'rgba(6, 182, 212, 0.5)',    // cyan
-        'rgba(132, 204, 22, 0.5)',   // lime
-        'rgba(249, 115, 22, 0.5)',   // orange
-        'rgba(99, 102, 241, 0.5)'    // indigo
-      ];
+    // Quadrature rectangles
+    const details = result.details;
+    if (details && details.length > 0) {
+      // Generate colors from method color with varying opacity
+      const baseColor = methodColor;
 
-      // Position rectangles adjacently starting from -1
       let currentX = -1;
 
-      quadratureDetails.forEach((detail, i) => {
-        const xi = detail.originalNode;        // Node on [-1, 1]
-        const wi = detail.originalWeight;      // Original weight
-        const y = transformedFn(xi);           // Function value at this node
+      details.forEach((detail, i) => {
+        const xi = detail.originalNode;
+        const wi = detail.originalWeight;
+        const y = transformedFn(xi);
 
         if (!isFinite(y) || !isFinite(wi)) return;
 
-        // Rectangle from currentX to currentX + wi, height = y
         const leftX = currentX;
         const rightX = currentX + wi;
 
-        const rect = board.create('polygon', [
-          [leftX, 0],
-          [rightX, 0],
-          [rightX, y],
-          [leftX, y]
+        // Alternate opacity for readability
+        const opacity = i % 2 === 0 ? 0.5 : 0.35;
+
+        board.create('polygon', [
+          [leftX, 0], [rightX, 0], [rightX, y], [leftX, y]
         ], {
-          fillColor: colors[i % colors.length],
-          fillOpacity: 0.6,
-          strokeColor: colors[i % colors.length].replace('0.5', '0.9'),
-          strokeWidth: 1,
-          highlight: false,
-          vertices: { visible: false },
-          hasInnerPoints: false
+          fillColor: baseColor, fillOpacity: opacity,
+          strokeColor: baseColor, strokeWidth: 1,
+          highlight: false, vertices: { visible: false }, hasInnerPoints: false
         });
 
-        // Mark node on x-axis (at actual node position, not rectangle center)
+        // Node on x-axis
         board.create('point', [xi, 0], {
-          size: 4,
-          color: isDarkMode ? '#e5e7eb' : '#1f2937',
-          name: '',
-          fixed: true,
-          highlight: false
+          size: 4, color: isDarkMode ? '#e5e7eb' : '#1f2937',
+          name: '', fixed: true, highlight: false
         });
 
-        // Mark point on function at the node
+        // Point on function
         board.create('point', [xi, y], {
-          size: 3,
-          color: '#6366f1',
-          name: '',
-          fixed: true,
-          highlight: false
+          size: 3, color: baseColor,
+          name: '', fixed: true, highlight: false
         });
 
         currentX = rightX;
       });
     }
-
   };
 
-  // Render the Legendre polynomial view (Tab 3)
-  const renderLegendrePolynomial = (board) => {
-    if (!degree) return;
-
-    // Draw shaded bounding box for [-1, 1] x [-1, 1] region
-    board.create('polygon', [
-      [-1, -1],
-      [1, -1],
-      [1, 1],
-      [-1, 1]
-    ], {
-      fillColor: isDarkMode ? '#312e81' : '#e0e7ff',
-      fillOpacity: 0.3,
-      strokeColor: '#6366f1',
-      strokeWidth: 2,
-      fixed: true,
-      highlight: false,
-      vertices: { visible: false, fixed: true },
-      hasInnerPoints: false
-    });
-
-    // Draw horizontal lines at y = -1, 0, 1
-    board.create('segment', [[-1, 0], [1, 0]], {
-      strokeColor: '#9ca3af',
-      strokeWidth: 1,
-      dash: 2,
-      fixed: true,
-      highlight: false
-    });
-    board.create('segment', [[-1, 1], [1, 1]], {
-      strokeColor: '#6366f1',
-      strokeWidth: 1,
-      fixed: true,
-      highlight: false
-    });
-    board.create('segment', [[-1, -1], [1, -1]], {
-      strokeColor: '#6366f1',
-      strokeWidth: 1,
-      fixed: true,
-      highlight: false
-    });
-
-    // Draw vertical lines at x = -1 and 1
-    board.create('segment', [[-1, -1], [-1, 1]], {
-      strokeColor: '#6366f1',
-      strokeWidth: 1,
-      fixed: true,
-      highlight: false
-    });
-    board.create('segment', [[1, -1], [1, 1]], {
-      strokeColor: '#6366f1',
-      strokeWidth: 1,
-      fixed: true,
-      highlight: false
-    });
-
-    // Add corner labels for the bounding box
-    board.create('text', [-1.08, -1, '-1'], { fontSize: 12, color: '#6366f1', fixed: true });
-    board.create('text', [1.02, -1, '1'], { fontSize: 12, color: '#6366f1', fixed: true });
-    board.create('text', [-1.15, 1, '1'], { fontSize: 12, color: '#6366f1', fixed: true });
-    board.create('text', [-1.18, -1, '-1'], { fontSize: 12, color: '#6366f1', fixed: true });
-
-    // Plot Legendre polynomial P_n(x)
-    board.create('functiongraph', [
-      (x) => evaluateLegendre(degree, x)
-    ], {
-      strokeColor: '#10b981',
-      strokeWidth: 2.5,
-      highlight: false
-    });
-
-    // Mark the roots (nodes) on x-axis
-    const { nodes } = getNodesAndWeights(degree);
-    nodes.forEach((xi, i) => {
-      board.create('point', [xi, 0], {
-        size: 5,
-        color: '#ef4444',
-        name: `ξ${i + 1}`,
-        fixed: true,
-        highlight: false,
-        label: {
-          offset: [0, -15],
-          fontSize: 11,
-          color: '#ef4444'
-        }
-      });
-    });
-  };
-
-  // Get description text for current tab
+  // Tab description text
   const getTabDescription = () => {
-    if (activeTab === 0) {
+    if (activeTab === 'original') {
       return (
         <>
           <span className="inline-flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-blue-500"></span>
+            <span className="w-3 h-3 rounded-full bg-blue-500" />
             <span>a (drag to adjust)</span>
           </span>
           <span className="inline-flex items-center gap-2 ml-4">
-            <span className="w-3 h-3 rounded-full bg-red-500"></span>
+            <span className="w-3 h-3 rounded-full bg-red-500" />
             <span>b (drag to adjust)</span>
           </span>
           <span className="ml-4 text-gray-400 dark:text-gray-500">| Scroll to zoom, drag to pan</span>
         </>
       );
-    } else if (activeTab === 1) {
+    }
+    if (activeTab === 'convergence') {
       return (
-        <>
-          <span>Transformed to standard interval [-1, 1]</span>
-          <span className="ml-4 text-gray-400 dark:text-gray-500">| Rectangles show weighted contributions (widths = weights)</span>
-        </>
+        <span>Error vs number of quadrature points (log scale) for all enabled methods</span>
       );
-    } else {
+    }
+    // Method tab
+    const method = QUADRATURE_METHODS[activeTab];
+    if (method) {
       return (
         <>
-          <span>Legendre polynomial P<sub>{degree}</sub>(x)</span>
-          <span className="ml-4 text-gray-400 dark:text-gray-500">| Red points mark the {degree} root{degree !== 1 ? 's' : ''} (quadrature nodes)</span>
+          <span className="inline-flex items-center gap-2">
+            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: method.color }} />
+            <span>{method.name}</span>
+          </span>
+          <span className="ml-4 text-gray-400 dark:text-gray-500">
+            | Transformed to [-1, 1] &mdash; rectangles show weighted contributions (widths = weights)
+          </span>
         </>
       );
     }
+    return null;
   };
 
   return (
-    <div className="w-full bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+    <div className="w-full bg-white dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
       {/* Tab navigation */}
-      <div className="flex border-b dark:border-gray-700">
-        {TAB_LABELS.map((label, index) => (
-          <button
-            key={index}
-            onClick={() => setActiveTab(index)}
-            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-              activeTab === index
-                ? 'bg-indigo-50 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-200'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
+      <div className="flex border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 overflow-x-auto">
+        {tabs.map((tab) => {
+          const method = QUADRATURE_METHODS[tab.id];
+          const isActive = activeTab === tab.id;
+          const accentColor = method ? method.color : undefined;
+
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-shrink-0 px-4 py-2.5 text-sm font-medium transition-all whitespace-nowrap ${
+                isActive
+                  ? 'bg-white dark:bg-gray-800 border-b-2'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+              }`}
+              style={isActive ? {
+                color: accentColor || (isDarkMode ? '#818cf8' : '#4f46e5'),
+                borderBottomColor: accentColor || (isDarkMode ? '#818cf8' : '#4f46e5')
+              } : undefined}
+            >
+              {method && (
+                <span
+                  className="inline-block w-2 h-2 rounded-full mr-2"
+                  style={{ backgroundColor: method.color }}
+                />
+              )}
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
 
-      {/* Graph container */}
-      <div
-        ref={containerRef}
-        id="jxgbox"
-        className="jxgbox w-full"
-        style={{ aspectRatio: '1/1', minHeight: '400px' }}
-      />
+      {/* Graph container or convergence chart */}
+      {activeTab === 'convergence' ? (
+        <ConvergenceChart
+          convergenceData={convergenceData}
+          enabledMethods={enabledMethods}
+          isDarkMode={isDarkMode}
+        />
+      ) : (
+        <div
+          ref={containerRef}
+          id="jxgbox"
+          className="jxgbox w-full"
+          style={{ aspectRatio: '1/1', minHeight: '400px' }}
+        />
+      )}
 
       {/* Description bar */}
-      <div className="px-4 py-2 bg-gray-50 dark:bg-gray-700 border-t dark:border-gray-600 text-sm text-gray-600 dark:text-gray-300">
+      <div className="px-4 py-2.5 bg-gray-50/80 dark:bg-gray-800/80 border-t border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-400">
         {getTabDescription()}
       </div>
     </div>

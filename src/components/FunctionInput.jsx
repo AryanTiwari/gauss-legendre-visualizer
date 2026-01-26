@@ -34,8 +34,8 @@ export function FunctionInput({
   }, [value]);
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+    <div className="bg-white dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+      <label className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
         Function f(x)
       </label>
 

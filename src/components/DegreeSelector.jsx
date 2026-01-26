@@ -6,8 +6,8 @@
 
 export function DegreeSelector({ value, onChange }) {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+    <div className="bg-white dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+      <label className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">
         Quadrature Degree (n)
       </label>
 
@@ -26,7 +26,7 @@ export function DegreeSelector({ value, onChange }) {
         {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
           <span
             key={n}
-            className={`w-4 text-center ${n === value ? 'text-indigo-600 dark:text-indigo-400 font-bold' : ''}`}
+            className={`w-4 text-center ${n === value ? "text-indigo-600 dark:text-indigo-400 font-bold" : ""}`}
           >
             {n}
           </span>
@@ -35,15 +35,17 @@ export function DegreeSelector({ value, onChange }) {
 
       {/* Current selection display */}
       <div className="mt-3 text-center">
-        <span className="text-3xl font-bold text-indigo-600 dark:text-indigo-400">{value}</span>
+        <span className="text-3xl font-bold text-indigo-600 dark:text-indigo-400">
+          {value}
+        </span>
         <span className="text-gray-500 dark:text-gray-400 ml-2">
-          {value === 1 ? 'point' : 'points'}
+          {value === 1 ? "point" : "points"}
         </span>
       </div>
 
       {/* Info text */}
       <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 text-center">
-        Gauss-Legendre with n points is exact for polynomials up to degree {2 * value - 1}
+        Number of quadrature nodes for all methods
       </p>
     </div>
   );

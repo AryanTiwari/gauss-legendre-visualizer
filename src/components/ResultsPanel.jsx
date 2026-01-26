@@ -1,27 +1,35 @@
 /**
  * Results Panel Component
  *
- * Displays the computed integral, quadrature nodes/weights table,
- * and error estimation
+ * Displays:
+ * 1. Integral notation
+ * 2. Comparison table across all enabled methods
+ * 3. Tabbed detail view for nodes/weights per method
+ * 4. Formula explanation
  */
 
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
-import { computeQuadrature } from '../utils/gaussLegendre';
+import { QUADRATURE_METHODS, METHOD_IDS } from '../utils/quadrature/index.js';
 
 export function ResultsPanel({
-  results,
+  allResults,
+  enabledMethods,
   expression,
   intervalA,
   intervalB,
   degree,
-  parsedFn
+  referenceValue
 }) {
+  const [detailTab, setDetailTab] = useState('gaussLegendre');
+
+  // Keep detail tab in sync with enabled methods
+  const activeDetailTab = enabledMethods.includes(detailTab) ? detailTab : enabledMethods[0];
+
   // Render the integral notation
   const integralLatex = useMemo(() => {
     if (!expression) return '';
-
     try {
       const a = intervalA.toFixed(2);
       const b = intervalB.toFixed(2);
@@ -34,21 +42,10 @@ export function ResultsPanel({
     }
   }, [expression, intervalA, intervalB]);
 
-  // Compute reference value using n=10 quadrature (highest available)
-  const referenceValue = useMemo(() => {
-    if (!parsedFn) return null;
-    try {
-      const result = computeQuadrature(parsedFn, intervalA, intervalB, 10);
-      return result.integral;
-    } catch {
-      return null;
-    }
-  }, [parsedFn, intervalA, intervalB]);
-
-  // Handle no results
-  if (!results) {
+  // No results
+  if (!allResults) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+      <div className="bg-white dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
         <p className="text-gray-500 dark:text-gray-400 text-center">
           Enter a valid function to see results
         </p>
@@ -56,137 +53,183 @@ export function ResultsPanel({
     );
   }
 
-  // Handle error
-  if (results.error && !results.partial) {
-    return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-        <div className="text-red-600 dark:text-red-400 text-center">
-          <p className="font-medium">Computation Error</p>
-          <p className="text-sm">{results.error}</p>
-        </div>
-      </div>
-    );
-  }
-
-  const { integral, details, errorEstimate, mightBeExact } = results.partial || results;
+  const activeResult = allResults[activeDetailTab];
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 space-y-4">
-      {/* Integral Result */}
+    <div className="bg-white dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-5">
+      {/* Integral Notation */}
       <div className="text-center dark:text-white">
         <div
           className="mb-2"
           dangerouslySetInnerHTML={{ __html: integralLatex }}
         />
-
-        {/* Values comparison */}
-        <div className="mt-3 grid grid-cols-2 gap-4">
-          {/* Reference Value (n=10) */}
-          <div className="border-r border-gray-200 dark:border-gray-600 pr-4">
+        {/* Reference value */}
+        {referenceValue !== null && isFinite(referenceValue) && (
+          <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
             <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-              Reference Value (n=10)
+              Reference Value (n=10 Gauss-Legendre)
             </p>
-            <div className="text-2xl font-bold text-gray-700 dark:text-gray-200">
-              {referenceValue !== null && isFinite(referenceValue)
-                ? referenceValue.toFixed(8)
-                : 'undefined'}
+            <div className="text-xl font-semibold text-gray-700 dark:text-gray-200 font-mono">
+              {referenceValue.toFixed(8)}
             </div>
           </div>
-
-          {/* Quadrature Approximation */}
-          <div className="pl-4">
-            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-              Your Approximation (n={degree})
-            </p>
-            <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
-              {isFinite(integral) ? integral.toFixed(8) : 'undefined'}
-            </div>
-          </div>
-        </div>
-
-        {/* Accuracy indicator */}
-        {mightBeExact && (
-          <p className="text-sm text-green-600 dark:text-green-400 mt-3">
-            This is likely the exact value (polynomial degree ≤ {2 * degree - 1})
-          </p>
-        )}
-        {errorEstimate !== null && !mightBeExact && (
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-3">
-            Estimated error: ±{errorEstimate.toExponential(2)}
-          </p>
-        )}
-        {degree === 10 && !mightBeExact && (
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-3">
-            Using maximum available degree (n=10)
-          </p>
         )}
       </div>
 
-      {/* Warning for partial results */}
-      {results.error && results.partial && (
-        <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded p-2 text-sm text-yellow-800 dark:text-yellow-200">
-          Warning: {results.error}
-        </div>
-      )}
-
-      {/* Nodes and Weights Table */}
+      {/* Comparison Table */}
       <div>
-        <h3 className="font-medium text-gray-700 dark:text-gray-200 mb-2">
-          Quadrature Details (n = {degree})
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
+          Method Comparison (n = {degree})
         </h3>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
           <table className="w-full text-sm dark:text-gray-300">
             <thead>
-              <tr className="bg-gray-50 dark:bg-gray-700">
-                <th className="px-2 py-1 text-left">i</th>
-                <th className="px-2 py-1 text-right">ξᵢ (std)</th>
-                <th className="px-2 py-1 text-right">xᵢ (trans)</th>
-                <th className="px-2 py-1 text-right">wᵢ</th>
-                <th className="px-2 py-1 text-right">f(xᵢ)</th>
-                <th className="px-2 py-1 text-right">wᵢ·f(xᵢ)</th>
+              <tr className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                <th className="px-3 py-2 text-left">Method</th>
+                <th className="px-3 py-2 text-right">Integral</th>
+                <th className="px-3 py-2 text-right">Error</th>
               </tr>
             </thead>
             <tbody>
-              {details?.map((row, i) => (
-                <tr
-                  key={i}
-                  className={i % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'}
-                >
-                  <td className="px-2 py-1 text-gray-600 dark:text-gray-400">{row.index}</td>
-                  <td className="px-2 py-1 text-right font-mono text-xs">
-                    {row.originalNode.toFixed(6)}
-                  </td>
-                  <td className="px-2 py-1 text-right font-mono text-xs">
-                    {row.transformedNode.toFixed(6)}
-                  </td>
-                  <td className="px-2 py-1 text-right font-mono text-xs">
-                    {row.transformedWeight.toFixed(6)}
-                  </td>
-                  <td className="px-2 py-1 text-right font-mono text-xs">
-                    {isFinite(row.fValue) ? row.fValue.toFixed(6) : 'NaN'}
-                  </td>
-                  <td className="px-2 py-1 text-right font-mono text-xs font-medium text-indigo-600 dark:text-indigo-400">
-                    {isFinite(row.contribution) ? row.contribution.toFixed(6) : 'NaN'}
-                  </td>
-                </tr>
-              ))}
+              {enabledMethods.map((methodId, i) => {
+                const method = QUADRATURE_METHODS[methodId];
+                const result = allResults[methodId];
+                if (!result) return null;
+
+                const error = referenceValue !== null
+                  ? Math.abs(result.integral - referenceValue)
+                  : null;
+
+                return (
+                  <tr
+                    key={methodId}
+                    className={i % 2 === 0
+                      ? 'bg-white dark:bg-gray-800'
+                      : 'bg-gray-50 dark:bg-gray-700'
+                    }
+                  >
+                    <td className="px-3 py-2">
+                      <span className="inline-flex items-center gap-2">
+                        <span
+                          className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: method.color }}
+                        />
+                        <span className="font-medium">{method.shortName}</span>
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-right font-mono text-xs">
+                      {result.hasInvalidValues
+                        ? <span className="text-red-500">NaN</span>
+                        : isFinite(result.integral)
+                          ? result.integral.toFixed(8)
+                          : 'undefined'
+                      }
+                    </td>
+                    <td className="px-3 py-2 text-right font-mono text-xs">
+                      {error !== null && isFinite(error)
+                        ? error < 1e-15
+                          ? <span className="text-green-600 dark:text-green-400">&lt; 10⁻¹⁵</span>
+                          : error.toExponential(2)
+                        : '—'
+                      }
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
-            <tfoot>
-              <tr className="bg-indigo-50 dark:bg-indigo-900/50 font-medium">
-                <td colSpan="5" className="px-2 py-1 text-right">
-                  Sum (Integral):
-                </td>
-                <td className="px-2 py-1 text-right font-mono text-indigo-600 dark:text-indigo-400">
-                  {isFinite(integral) ? integral.toFixed(6) : 'NaN'}
-                </td>
-              </tr>
-            </tfoot>
           </table>
         </div>
       </div>
 
+      {/* Detail Tabs */}
+      <div>
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
+          Quadrature Details
+        </h3>
+
+        {/* Tab buttons */}
+        <div className="flex gap-1 mb-3 overflow-x-auto">
+          {enabledMethods.map((methodId) => {
+            const method = QUADRATURE_METHODS[methodId];
+            const isActive = methodId === activeDetailTab;
+
+            return (
+              <button
+                key={methodId}
+                onClick={() => setDetailTab(methodId)}
+                className={`flex-shrink-0 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                  isActive
+                    ? 'text-white'
+                    : 'text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+                style={isActive ? { backgroundColor: method.color } : undefined}
+              >
+                {method.shortName}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Detail table for active method */}
+        {activeResult && activeResult.details && (
+          <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+            <table className="w-full text-sm dark:text-gray-300">
+              <thead>
+                <tr className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                  <th className="px-2 py-1 text-left">i</th>
+                  <th className="px-2 py-1 text-right">&#958;&#7522; (std)</th>
+                  <th className="px-2 py-1 text-right">w&#7522;</th>
+                  <th className="px-2 py-1 text-right">f(x&#7522;)</th>
+                  <th className="px-2 py-1 text-right">w&#7522;&middot;f(x&#7522;)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {activeResult.details.map((row, i) => (
+                  <tr
+                    key={i}
+                    className={i % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'}
+                  >
+                    <td className="px-2 py-1 text-gray-600 dark:text-gray-400">{row.index}</td>
+                    <td className="px-2 py-1 text-right font-mono text-xs">
+                      {row.originalNode.toFixed(6)}
+                    </td>
+                    <td className="px-2 py-1 text-right font-mono text-xs">
+                      {row.transformedWeight.toFixed(6)}
+                    </td>
+                    <td className="px-2 py-1 text-right font-mono text-xs">
+                      {isFinite(row.fValue) ? row.fValue.toFixed(6) : 'NaN'}
+                    </td>
+                    <td className="px-2 py-1 text-right font-mono text-xs font-medium"
+                      style={{ color: QUADRATURE_METHODS[activeDetailTab]?.color }}
+                    >
+                      {isFinite(row.contribution) ? row.contribution.toFixed(6) : 'NaN'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="font-medium" style={{
+                  backgroundColor: QUADRATURE_METHODS[activeDetailTab]
+                    ? `${QUADRATURE_METHODS[activeDetailTab].color}15`
+                    : undefined
+                }}>
+                  <td colSpan="4" className="px-2 py-1 text-right">
+                    Sum (Integral):
+                  </td>
+                  <td className="px-2 py-1 text-right font-mono"
+                    style={{ color: QUADRATURE_METHODS[activeDetailTab]?.color }}
+                  >
+                    {isFinite(activeResult.integral) ? activeResult.integral.toFixed(6) : 'NaN'}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        )}
+      </div>
+
       {/* Formula explanation */}
-      <div className="text-xs text-gray-500 dark:text-gray-400 border-t dark:border-gray-600 pt-3">
+      <div className="text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 pt-4">
         <p>
           <strong className="dark:text-gray-300">Formula:</strong> The integral is approximated as
         </p>
@@ -200,7 +243,8 @@ export function ResultsPanel({
           }}
         />
         <p className="mt-2">
-          where ξᵢ are the standard Legendre nodes on [-1, 1] and wᵢ are the corresponding weights.
+          where &#958;&#7522; are the quadrature nodes on [-1, 1] and w&#7522; are the corresponding weights.
+          Different methods choose different nodes and weights.
         </p>
       </div>
     </div>
