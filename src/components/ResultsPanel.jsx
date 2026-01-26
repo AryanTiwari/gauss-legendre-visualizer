@@ -20,7 +20,8 @@ export function ResultsPanel({
   intervalA,
   intervalB,
   degree,
-  referenceValue
+  referenceValue,
+  onToggle
 }) {
   const [detailTab, setDetailTab] = useState('gaussLegendre');
 
@@ -67,7 +68,7 @@ export function ResultsPanel({
         {referenceValue !== null && isFinite(referenceValue) && (
           <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
             <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-              Reference Value (n=10 Gauss-Legendre)
+              Reference Value (Adaptive Quadrature)
             </p>
             <div className="text-xl font-semibold text-gray-700 dark:text-gray-200 font-mono">
               {referenceValue.toFixed(8)}
@@ -79,7 +80,7 @@ export function ResultsPanel({
       {/* Comparison Table */}
       <div>
         <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
-          Method Comparison (n = {degree})
+          Method Comparison
         </h3>
         <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
           <table className="w-full text-sm dark:text-gray-300">
@@ -91,46 +92,53 @@ export function ResultsPanel({
               </tr>
             </thead>
             <tbody>
-              {enabledMethods.map((methodId, i) => {
+              {METHOD_IDS.map((methodId, i) => {
                 const method = QUADRATURE_METHODS[methodId];
-                const result = allResults[methodId];
-                if (!result) return null;
+                const isEnabled = enabledMethods.includes(methodId);
+                const result = allResults?.[methodId];
 
-                const error = referenceValue !== null
+                const error = (referenceValue !== null && result)
                   ? Math.abs(result.integral - referenceValue)
                   : null;
 
                 return (
                   <tr
                     key={methodId}
-                    className={i % 2 === 0
-                      ? 'bg-white dark:bg-gray-800'
-                      : 'bg-gray-50 dark:bg-gray-700'
-                    }
+                    onClick={() => onToggle(methodId)}
+                    className={`cursor-pointer transition-colors ${
+                      i % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'
+                    } ${!isEnabled ? 'opacity-40' : ''} hover:bg-gray-100 dark:hover:bg-gray-600`}
                   >
                     <td className="px-3 py-2">
                       <span className="inline-flex items-center gap-2">
                         <span
-                          className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: method.color }}
+                          className="w-2.5 h-2.5 rounded-full flex-shrink-0 border-2"
+                          style={{
+                            backgroundColor: isEnabled ? method.color : 'transparent',
+                            borderColor: method.color
+                          }}
                         />
                         <span className="font-medium">{method.shortName}</span>
                       </span>
                     </td>
                     <td className="px-3 py-2 text-right font-mono text-xs">
-                      {result.hasInvalidValues
-                        ? <span className="text-red-500">NaN</span>
-                        : isFinite(result.integral)
-                          ? result.integral.toFixed(8)
-                          : 'undefined'
+                      {!isEnabled
+                        ? '—'
+                        : result?.hasInvalidValues
+                          ? <span className="text-red-500">NaN</span>
+                          : result && isFinite(result.integral)
+                            ? result.integral.toFixed(8)
+                            : '—'
                       }
                     </td>
                     <td className="px-3 py-2 text-right font-mono text-xs">
-                      {error !== null && isFinite(error)
-                        ? error < 1e-15
-                          ? <span className="text-green-600 dark:text-green-400">&lt; 10⁻¹⁵</span>
-                          : error.toExponential(2)
-                        : '—'
+                      {!isEnabled
+                        ? '—'
+                        : error !== null && isFinite(error)
+                          ? error < 1e-15
+                            ? <span className="text-green-600 dark:text-green-400">&lt; 10⁻¹⁵</span>
+                            : error.toExponential(2)
+                          : '—'
                       }
                     </td>
                   </tr>

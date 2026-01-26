@@ -9,6 +9,13 @@ import { useEffect, useRef } from 'react';
 import JXG from 'jsxgraph';
 import { QUADRATURE_METHODS } from '../utils/quadrature/index.js';
 
+/** Convert an integer exponent to a string with Unicode superscript: e.g. -16 → "10⁻¹⁶" */
+function toSuperscript(n) {
+  const sup = { '-': '\u207B', '0': '\u2070', '1': '\u00B9', '2': '\u00B2', '3': '\u00B3',
+    '4': '\u2074', '5': '\u2075', '6': '\u2076', '7': '\u2077', '8': '\u2078', '9': '\u2079' };
+  return '10' + String(n).split('').map(c => sup[c] || c).join('');
+}
+
 // Hook to detect dark mode (shared pattern)
 function useDarkMode() {
   const getInitial = () => {
@@ -55,7 +62,7 @@ export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode }
     const maxLog = 4;
 
     const board = JXG.JSXGraph.initBoard(containerRef.current, {
-      boundingbox: [-2.5, maxLog + 1.5, 11.5, minLog - 1.5],
+      boundingbox: [-2.0, maxLog + 1.5, 11.5, minLog - 1.5],
       axis: false,
       showNavigation: false,
       showCopyright: false,
@@ -94,7 +101,7 @@ export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode }
       });
       // Show labels at every 2nd power to avoid clutter
       if (y % 2 === 0) {
-        board.create('text', [-0.3, y, `10^${y}`], {
+        board.create('text', [-0.3, y, toSuperscript(y)], {
           fontSize: 11,
           color: axisColor,
           fixed: true,
@@ -119,7 +126,16 @@ export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode }
       highlight: false
     });
 
-    // Axis labels
+    // Y-axis label (rotated)
+    board.create('text', [-1.5, (minLog + maxLog) / 2, 'Error'], {
+      fontSize: 13,
+      color: bgText,
+      fixed: true,
+      anchorX: 'middle',
+      rotate: 90
+    });
+
+    // X-axis label
     board.create('text', [5.5, minLog - 1, 'Number of points (n)'], {
       fontSize: 13,
       color: bgText,
@@ -222,7 +238,7 @@ export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode }
     <div
       ref={containerRef}
       className="jxgbox w-full"
-      style={{ aspectRatio: '1/1', minHeight: '400px' }}
+      style={{ aspectRatio: '10/9', minHeight: '400px' }}
     />
   );
 }

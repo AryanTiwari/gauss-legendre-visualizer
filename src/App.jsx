@@ -13,7 +13,6 @@ import { DegreeSelector } from './components/DegreeSelector';
 import { IntervalSliders } from './components/IntervalSliders';
 import { ResultsPanel } from './components/ResultsPanel';
 import { DarkModeToggle } from './components/DarkModeToggle';
-import { MethodSelector } from './components/MethodSelector';
 import { AboutSection } from './components/AboutSection';
 
 function App() {
@@ -84,11 +83,6 @@ function App() {
               onChangeB={setIntervalB}
             />
 
-            <MethodSelector
-              enabledMethods={enabledMethods}
-              onToggle={toggleMethod}
-            />
-
             <AboutSection />
           </div>
 
@@ -120,6 +114,7 @@ function App() {
               intervalB={intervalB}
               degree={degree}
               referenceValue={referenceValue}
+              onToggle={toggleMethod}
             />
           </div>
         </div>

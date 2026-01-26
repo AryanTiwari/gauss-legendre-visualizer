@@ -141,11 +141,43 @@ export function computeQuadrature(methodId, f, a, b, n, options = {}) {
 }
 
 /**
- * Compute a high-accuracy reference value using n=10 Gauss-Legendre.
+ * Compute a high-accuracy reference value using adaptive Simpson's rule.
+ * This provides near-machine-epsilon accuracy for smooth functions.
  */
 export function computeReferenceValue(f, a, b) {
-  const result = computeQuadrature('gaussLegendre', f, a, b, 10);
-  return result.integral;
+  return adaptiveSimpson(f, a, b, 1e-14, 30);
+}
+
+/**
+ * Adaptive Simpson's rule with Richardson extrapolation.
+ * Recursively subdivides the interval until the error estimate is below tolerance.
+ */
+function adaptiveSimpson(f, a, b, tol, maxDepth) {
+  const fa = f(a);
+  const fb = f(b);
+  const m = (a + b) / 2;
+  const fm = f(m);
+  const whole = ((b - a) / 6) * (fa + 4 * fm + fb);
+  return adaptiveSimpsonRecurse(f, a, b, fa, fb, fm, whole, tol, maxDepth, 0);
+}
+
+function adaptiveSimpsonRecurse(f, a, b, fa, fb, fm, whole, tol, maxDepth, depth) {
+  const m = (a + b) / 2;
+  const lm = (a + m) / 2;
+  const rm = (m + b) / 2;
+  const flm = f(lm);
+  const frm = f(rm);
+  const left = ((m - a) / 6) * (fa + 4 * flm + fm);
+  const right = ((b - m) / 6) * (fm + 4 * frm + fb);
+  const combined = left + right;
+  const delta = combined - whole;
+
+  if (depth >= maxDepth || Math.abs(delta) <= 15 * tol) {
+    return combined + delta / 15;
+  }
+
+  return adaptiveSimpsonRecurse(f, a, m, fa, fm, flm, left, tol / 2, maxDepth, depth + 1) +
+         adaptiveSimpsonRecurse(f, m, b, fm, fb, frm, right, tol / 2, maxDepth, depth + 1);
 }
 
 /**

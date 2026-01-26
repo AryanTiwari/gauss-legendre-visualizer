@@ -477,7 +477,7 @@ export function Graph({
             ref={containerRef}
             id="jxgbox"
             className="jxgbox w-full"
-            style={{ aspectRatio: '1/1', minHeight: '400px' }}
+            style={{ aspectRatio: '10/9', minHeight: '400px' }}
           />
           {activeTab === 'random' && (
             <div className="absolute top-3 right-3 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg border border-gray-200 dark:border-gray-700 p-3 shadow-lg z-10 min-w-[160px]">
