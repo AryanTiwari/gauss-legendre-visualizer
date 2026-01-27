@@ -53,7 +53,8 @@ export function Graph({
   convergenceData,
   randomSeed,
   onRandomSeedChange,
-  onReshuffle
+  onReshuffle,
+  functionValidation
 }) {
   const containerRef = useRef(null);
   const boardRef = useRef(null);
@@ -83,6 +84,8 @@ export function Graph({
     }
   }, [tabs, activeTab]);
 
+  const functionInvalid = functionValidation && !functionValidation.valid;
+
   // Bounding box calculations
   const calculateOriginalBounds = useCallback(() => {
     const padding = Math.max(1, (intervalB - intervalA) * 0.2);
@@ -91,7 +94,7 @@ export function Graph({
     let yMin = -1;
     let yMax = 1;
 
-    if (fn && isValid) {
+    if (fn) {
       const samples = 100;
       const step = (intervalB - intervalA) / samples;
       for (let i = 0; i <= samples; i++) {
@@ -119,7 +122,7 @@ export function Graph({
       xMax += diff;
     }
     return [xMin, yMax, xMax, yMin];
-  }, [fn, intervalA, intervalB, isValid]);
+  }, [fn, intervalA, intervalB]);
 
   const calculateStandardBounds = useCallback(() => {
     let xMin = -1.5;
@@ -127,7 +130,7 @@ export function Graph({
     let yMin = -1;
     let yMax = 1;
 
-    if (fn && isValid) {
+    if (fn) {
       for (let i = 0; i <= 100; i++) {
         const xi = -1 + 2 * i / 100;
         const x = ((intervalB - intervalA) / 2) * xi + (intervalA + intervalB) / 2;
@@ -154,7 +157,7 @@ export function Graph({
       xMax += diff;
     }
     return [xMin, yMax, xMax, yMin];
-  }, [fn, intervalA, intervalB, isValid]);
+  }, [fn, intervalA, intervalB]);
 
   // Render JSXGraph board for non-convergence tabs
   useEffect(() => {
@@ -209,12 +212,12 @@ export function Graph({
         boardRef.current = null;
       }
     };
-  }, [activeTab, fn, isValid, intervalA, intervalB, degree, allResults, isDarkMode, enabledMethods]);
+  }, [activeTab, fn, isValid, intervalA, intervalB, degree, allResults, isDarkMode, enabledMethods, functionInvalid]);
 
   // --- Render functions ---
 
   const renderOriginalFunction = (board) => {
-    if (!fn || !isValid) return;
+    if (!fn) return;
 
     board.create('functiongraph', [
       (x) => { const y = fn(x); return isFinite(y) ? y : NaN; }
@@ -466,11 +469,25 @@ export function Graph({
 
       {/* Graph container or convergence chart */}
       {activeTab === 'convergence' ? (
-        <ConvergenceChart
-          convergenceData={convergenceData}
-          enabledMethods={enabledMethods}
-          isDarkMode={isDarkMode}
-        />
+        functionInvalid ? (
+          <div className="flex items-center justify-center" style={{ aspectRatio: '10/9', minHeight: '400px' }}>
+            <div className="text-center px-8 py-6 max-w-md">
+              <div className="text-amber-500 dark:text-amber-400 mb-3">
+                <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <p className="text-gray-700 dark:text-gray-300 font-medium mb-1">Cannot compute convergence</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{functionValidation?.message}</p>
+            </div>
+          </div>
+        ) : (
+          <ConvergenceChart
+            convergenceData={convergenceData}
+            enabledMethods={enabledMethods}
+            isDarkMode={isDarkMode}
+          />
+        )
       ) : (
         <div className="relative">
           <div
@@ -479,7 +496,21 @@ export function Graph({
             className="jxgbox w-full"
             style={{ aspectRatio: '10/9', minHeight: '400px' }}
           />
-          {activeTab === 'random' && (
+          {/* Warning overlay for invalid function on interval (method tabs only) */}
+          {functionInvalid && activeTab !== 'original' && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm z-10">
+              <div className="text-center px-8 py-6 max-w-md">
+                <div className="text-amber-500 dark:text-amber-400 mb-3">
+                  <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <p className="text-gray-700 dark:text-gray-300 font-medium mb-1">Cannot compute quadrature</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{functionValidation?.message}</p>
+              </div>
+            </div>
+          )}
+          {activeTab === 'random' && !functionInvalid && (
             <div className="absolute top-3 right-3 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg border border-gray-200 dark:border-gray-700 p-3 shadow-lg z-10 min-w-[160px]">
               <div className="flex items-center gap-2 mb-2">
                 <label className="text-xs text-gray-500 dark:text-gray-400">Seed</label>

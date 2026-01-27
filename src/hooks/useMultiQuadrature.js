@@ -11,7 +11,8 @@ import {
   METHOD_IDS,
   computeQuadrature,
   computeConvergenceData,
-  computeReferenceValue
+  computeReferenceValue,
+  validateFunctionOnInterval
 } from '../utils/quadrature/index.js';
 import { parseFunction, isLikelyPolynomial } from '../utils/mathParser';
 
@@ -40,9 +41,20 @@ export function useMultiQuadrature(
   // Validate interval
   const intervalValid = intervalA < intervalB;
 
+  // Validate function on interval (check for NaN, asymptotes, etc.)
+  const functionValidation = useMemo(() => {
+    if (!parsedFunction.success || !parsedFunction.fn || !intervalValid) {
+      return { valid: true }; // Don't show validation error if expression/interval is already invalid
+    }
+    return validateFunctionOnInterval(parsedFunction.fn, intervalA, intervalB);
+  }, [parsedFunction, intervalA, intervalB, intervalValid]);
+
   // Compute results for all enabled methods
   const allResults = useMemo(() => {
     if (!parsedFunction.success || !parsedFunction.fn || !intervalValid) {
+      return null;
+    }
+    if (!functionValidation.valid) {
       return null;
     }
 
@@ -72,7 +84,7 @@ export function useMultiQuadrature(
 
   // Reference value (n=10 Gauss-Legendre)
   const referenceValue = useMemo(() => {
-    if (!parsedFunction.success || !parsedFunction.fn || !intervalValid) {
+    if (!parsedFunction.success || !parsedFunction.fn || !intervalValid || !functionValidation.valid) {
       return null;
     }
     try {
@@ -80,11 +92,11 @@ export function useMultiQuadrature(
     } catch {
       return null;
     }
-  }, [parsedFunction, intervalA, intervalB, intervalValid]);
+  }, [parsedFunction, intervalA, intervalB, intervalValid, functionValidation]);
 
   // Convergence data (error vs n for each method)
   const convergenceData = useMemo(() => {
-    if (!parsedFunction.success || !parsedFunction.fn || !intervalValid) {
+    if (!parsedFunction.success || !parsedFunction.fn || !intervalValid || !functionValidation.valid) {
       return null;
     }
     try {
@@ -94,7 +106,7 @@ export function useMultiQuadrature(
     } catch {
       return null;
     }
-  }, [parsedFunction, intervalA, intervalB, enabledMethods, randomSeed, intervalValid]);
+  }, [parsedFunction, intervalA, intervalB, enabledMethods, randomSeed, intervalValid, functionValidation]);
 
   // Update handlers with validation
   const updateDegree = useCallback((n) => {
@@ -151,7 +163,8 @@ export function useMultiQuadrature(
     allResults,
     referenceValue,
     convergenceData,
-    isValid: parsedFunction.success && intervalValid && allResults !== null,
+    functionValidation,
+    isValid: parsedFunction.success && intervalValid && functionValidation.valid && allResults !== null,
 
     // Setters
     setExpression,

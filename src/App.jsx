@@ -27,6 +27,7 @@ function App() {
     allResults,
     referenceValue,
     convergenceData,
+    functionValidation,
     isValid,
     setExpression,
     setDegree,
@@ -101,6 +102,7 @@ function App() {
               randomSeed={randomSeed}
               onRandomSeedChange={setRandomSeed}
               onReshuffle={reshuffleRandom}
+              functionValidation={functionValidation}
             />
           </div>
 
@@ -115,6 +117,7 @@ function App() {
               degree={degree}
               referenceValue={referenceValue}
               onToggle={toggleMethod}
+              functionValidation={functionValidation}
             />
           </div>
         </div>

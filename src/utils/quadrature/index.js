@@ -181,6 +181,107 @@ function adaptiveSimpsonRecurse(f, a, b, fa, fb, fm, whole, tol, maxDepth, depth
 }
 
 /**
+ * Validate whether a function is integrable on [a, b].
+ * Samples the function at many points and checks for NaN/Infinity.
+ *
+ * @param {function} f - Function to validate
+ * @param {number} a - Lower bound
+ * @param {number} b - Upper bound
+ * @returns {{ valid: boolean, message?: string }}
+ */
+export function validateFunctionOnInterval(f, a, b) {
+  const numSamples = 200;
+  let nanCount = 0;
+  let infCount = 0;
+  const values = [];
+
+  for (let i = 0; i <= numSamples; i++) {
+    const x = a + (b - a) * i / numSamples;
+    try {
+      const y = f(x);
+      values.push(y);
+      if (isNaN(y)) {
+        nanCount++;
+      } else if (!isFinite(y)) {
+        infCount++;
+      }
+    } catch {
+      values.push(NaN);
+      nanCount++;
+    }
+  }
+
+  const totalSamples = numSamples + 1;
+  const nanRatio = nanCount / totalSamples;
+
+  if (nanRatio > 0.1) {
+    return {
+      valid: false,
+      message: `Function is undefined on a large portion of [${a.toFixed(2)}, ${b.toFixed(2)}]. Adjust the interval to the function's domain.`
+    };
+  }
+
+  if (infCount > 0) {
+    return {
+      valid: false,
+      message: `Function has asymptotes or singularities on [${a.toFixed(2)}, ${b.toFixed(2)}]. The integral may not exist on this interval.`
+    };
+  }
+
+  // Detect singularities that fall between sample points by looking for
+  // extremely large magnitudes or rapid sign-changing spikes (characteristic
+  // of poles like 1/x near x=0).
+  for (let i = 1; i < values.length; i++) {
+    const prev = values[i - 1];
+    const curr = values[i];
+    if (!isFinite(prev) || !isFinite(curr)) continue;
+
+    // Adjacent values with opposite signs and both large → pole (e.g. 1/x near 0)
+    if (prev * curr < 0 && Math.abs(prev) > 50 && Math.abs(curr) > 50) {
+      return {
+        valid: false,
+        message: `Function appears to have an asymptote on [${a.toFixed(2)}, ${b.toFixed(2)}]. The integral may not exist on this interval.`
+      };
+    }
+
+    // Huge magnitude ratio between adjacent finite samples → nearby singularity
+    const absPrev = Math.abs(prev);
+    const absCurr = Math.abs(curr);
+    if (absPrev > 1 && absCurr > 1) {
+      const ratio = absCurr > absPrev ? absCurr / absPrev : absPrev / absCurr;
+      if (ratio > 1e6) {
+        return {
+          valid: false,
+          message: `Function has a singularity or asymptote on [${a.toFixed(2)}, ${b.toFixed(2)}]. The integral may not exist on this interval.`
+        };
+      }
+    }
+  }
+
+  // Also check endpoints and near-endpoints for boundary issues
+  const eps = (b - a) * 1e-10;
+  const boundaryPoints = [a, a + eps, b - eps, b];
+  for (const x of boundaryPoints) {
+    try {
+      const y = f(x);
+      if (!isFinite(y)) {
+        return {
+          valid: false,
+          message: `Function is undefined or infinite at the boundary of [${a.toFixed(2)}, ${b.toFixed(2)}]. The integral may not converge.`
+        };
+      }
+    } catch {
+      return {
+        valid: false,
+        message: `Function cannot be evaluated at the boundary of [${a.toFixed(2)}, ${b.toFixed(2)}].`
+      };
+    }
+  }
+
+  return { valid: true };
+}
+
+/**
  * Compute convergence data: run each method for n=1..10 and measure error.
  *
  * @param {function} f
