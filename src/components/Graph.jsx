@@ -486,6 +486,7 @@ export function Graph({
             convergenceData={convergenceData}
             enabledMethods={enabledMethods}
             isDarkMode={isDarkMode}
+            degree={degree}
           />
         )
       ) : (

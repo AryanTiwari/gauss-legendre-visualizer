@@ -9,38 +9,7 @@ import { useEffect, useRef } from 'react';
 import JXG from 'jsxgraph';
 import { QUADRATURE_METHODS } from '../utils/quadrature/index.js';
 
-/** Convert an integer exponent to a string with Unicode superscript: e.g. -16 → "10⁻¹⁶" */
-function toSuperscript(n) {
-  const sup = { '-': '\u207B', '0': '\u2070', '1': '\u00B9', '2': '\u00B2', '3': '\u00B3',
-    '4': '\u2074', '5': '\u2075', '6': '\u2076', '7': '\u2077', '8': '\u2078', '9': '\u2079' };
-  return '10' + String(n).split('').map(c => sup[c] || c).join('');
-}
-
-// Hook to detect dark mode (shared pattern)
-function useDarkMode() {
-  const getInitial = () => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('darkMode');
-      if (stored !== null) return stored === 'true';
-      return window.matchMedia('(prefers-color-scheme: dark)').matches;
-    }
-    return false;
-  };
-
-  const ref = useRef(getInitial());
-
-  useEffect(() => {
-    const observer = new MutationObserver(() => {
-      ref.current = document.documentElement.classList.contains('dark');
-    });
-    observer.observe(document.documentElement, { attributes: true });
-    return () => observer.disconnect();
-  }, []);
-
-  return ref.current;
-}
-
-export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode }) {
+export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode, degree }) {
   const containerRef = useRef(null);
   const boardRef = useRef(null);
 
@@ -99,16 +68,13 @@ export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode }
         fixed: true,
         highlight: false
       });
-      // Show labels at every 2nd power to avoid clutter
-      if (y % 2 === 0) {
-        board.create('text', [-0.3, y, `10<sup>${y}</sup>`], {
-          fontSize: 14,
-          color: axisColor,
-          fixed: true,
-          anchorX: 'right',
-          display: 'html'
-        });
-      }
+      board.create('text', [-0.3, y, `10<sup>${y}</sup>`], {
+        fontSize: 12,
+        color: axisColor,
+        fixed: true,
+        anchorX: 'right',
+        display: 'html'
+      });
     }
 
     // Prominent y-axis line
@@ -143,6 +109,29 @@ export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode }
       fixed: true,
       anchorX: 'middle'
     });
+
+    // Highlight current degree column
+    if (degree >= 1 && degree <= 10) {
+      board.create('polygon', [
+        [degree - 0.4, minLog], [degree + 0.4, minLog],
+        [degree + 0.4, maxLog], [degree - 0.4, maxLog]
+      ], {
+        fillColor: isDarkMode ? '#6366f1' : '#6366f1',
+        fillOpacity: isDarkMode ? 0.12 : 0.08,
+        strokeWidth: 0,
+        fixed: true,
+        highlight: false,
+        vertices: { visible: false, fixed: true },
+        hasInnerPoints: false
+      });
+      board.create('text', [degree, maxLog + 0.5, `n=${degree}`], {
+        fontSize: 12,
+        color: isDarkMode ? '#a5b4fc' : '#6366f1',
+        fixed: true,
+        anchorX: 'middle',
+        fontWeight: 'bold'
+      });
+    }
 
     // Plot each method's convergence line
     for (const methodId of enabledMethods) {
@@ -193,6 +182,53 @@ export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode }
       }
     }
 
+    // Annotate current degree points with error values
+    if (degree >= 1 && degree <= 10) {
+      let labelOffset = 0;
+      for (const methodId of enabledMethods) {
+        const method = QUADRATURE_METHODS[methodId];
+        const points = convergenceData.data[methodId];
+        if (!points) continue;
+        const pt = points.find(p => p.n === degree);
+        if (!pt) continue;
+
+        if (pt.error > 0) {
+          const logErr = Math.log10(pt.error);
+          // Larger highlighted point
+          board.create('point', [degree, logErr], {
+            size: 5,
+            color: method.color,
+            name: '',
+            fixed: true,
+            highlight: false,
+            strokeColor: isDarkMode ? '#e5e7eb' : '#ffffff',
+            strokeWidth: 2
+          });
+          // Error label
+          board.create('text', [degree + 0.45, logErr + 0.3 + labelOffset, pt.error.toExponential(1)], {
+            fontSize: 10,
+            color: method.color,
+            fixed: true,
+            anchorX: 'left',
+            fontWeight: 'bold'
+          });
+          labelOffset += 0.8;
+        } else {
+          // Exact — highlight diamond
+          board.create('point', [degree, minLog + 0.3], {
+            size: 6,
+            color: method.color,
+            name: '',
+            fixed: true,
+            highlight: false,
+            face: 'diamond',
+            strokeColor: isDarkMode ? '#e5e7eb' : '#ffffff',
+            strokeWidth: 2
+          });
+        }
+      }
+    }
+
     // Legend (bottom-left)
     let legendY = minLog + 0.5 + enabledMethods.length * 0.8;
     for (const methodId of enabledMethods) {
@@ -225,7 +261,7 @@ export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode }
         boardRef.current = null;
       }
     };
-  }, [convergenceData, enabledMethods, isDarkMode]);
+  }, [convergenceData, enabledMethods, isDarkMode, degree]);
 
   if (!convergenceData) {
     return (
