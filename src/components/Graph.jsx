@@ -131,10 +131,11 @@ export function Graph({
     let yMax = 1;
 
     if (fn) {
+      const jacobian = (intervalB - intervalA) / 2;
       for (let i = 0; i <= 100; i++) {
         const xi = -1 + 2 * i / 100;
-        const x = ((intervalB - intervalA) / 2) * xi + (intervalA + intervalB) / 2;
-        const y = fn(x);
+        const x = jacobian * xi + (intervalA + intervalB) / 2;
+        const y = fn(x) * jacobian; // Scale by Jacobian
         if (isFinite(y)) {
           if (y < yMin) yMin = y;
           if (y > yMax) yMax = y;
@@ -283,11 +284,14 @@ export function Graph({
 
     const methodColor = method.color;
 
-    // Transform function to [-1, 1]
+    // Transform function to [-1, 1] with Jacobian scaling
+    // When x ∈ [a,b] maps to ξ ∈ [-1,1], the integral becomes:
+    // ∫f(x)dx = (b-a)/2 ∫f(x(ξ))dξ, so we scale y by (b-a)/2
+    const jacobian = (intervalB - intervalA) / 2;
     const transformedFn = (xi) => {
-      const x = ((intervalB - intervalA) / 2) * xi + (intervalA + intervalB) / 2;
+      const x = jacobian * xi + (intervalA + intervalB) / 2;
       const y = fn(x);
-      return isFinite(y) ? y : NaN;
+      return isFinite(y) ? y * jacobian : NaN;
     };
 
     // Interval boundary lines
@@ -332,7 +336,7 @@ export function Graph({
           ], {
             fillColor: baseColor, fillOpacity: opacity,
             strokeColor: baseColor, strokeWidth: 1,
-            highlight: false, vertices: { visible: false }, hasInnerPoints: false
+            fixed: true, highlight: false, vertices: { visible: false, fixed: true }, hasInnerPoints: false
           });
         }
 
@@ -372,7 +376,7 @@ export function Graph({
           ], {
             fillColor: baseColor, fillOpacity: opacity,
             strokeColor: baseColor, strokeWidth: 1,
-            highlight: false, vertices: { visible: false }, hasInnerPoints: false
+            fixed: true, highlight: false, vertices: { visible: false, fixed: true }, hasInnerPoints: false
           });
 
           board.create('point', [xi, 0], {
