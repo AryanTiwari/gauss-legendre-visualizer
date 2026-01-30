@@ -1,17 +1,17 @@
 /**
- * Chebyshev Quadrature (Clenshaw-Curtis)
+ * Chebyshev Quadrature (Fejér's First Rule)
  *
  * Nodes are roots of Chebyshev polynomials of the first kind:
  *   xi = cos((2k - 1) * pi / (2n))  for k = 1, ..., n
  *
- * Weights are computed using Clenshaw-Curtis quadrature, which integrates
- * the interpolating polynomial through the Chebyshev nodes exactly.
+ * Weights are computed using Fejér's first rule, which provides optimal
+ * weights for integrating f(x) directly using Chebyshev nodes.
  *
  * Key properties:
  *   - Minimizes Runge phenomenon (unlike equally spaced)
  *   - Near-optimal for polynomial interpolation
  *   - Exact for polynomials up to degree n-1
- *   - Exponential convergence for analytic functions
+ *   - Exponential convergence for analytic functions (similar to Gauss-Legendre)
  */
 
 /**
@@ -31,47 +31,36 @@ export function getNodesAndWeights(n) {
   // Sort nodes from left to right for consistency
   nodes.sort((a, b) => a - b);
 
-  // Compute Clenshaw-Curtis weights for these nodes
-  const weights = computeClenshawCurtisWeights(nodes, n);
+  // Compute Fejér first rule weights for these nodes
+  const weights = computeFejerWeights(nodes, n);
 
   return { nodes, weights };
 }
 
 /**
- * Compute Clenshaw-Curtis weights for given Chebyshev nodes.
+ * Compute Fejér first rule weights for Chebyshev nodes of the first kind.
  *
- * For Chebyshev nodes of the first kind, the weight for node xi is:
- *   wi = (2/n) * sum_{j=0}^{floor((n-1)/2)} bj * cos(2j * arccos(xi))
- * where bj = 1 - 1/(4j^2 - 1) summed appropriately.
+ * For nodes x_k = cos((2k-1)π/(2n)), the weights are:
+ *   w_k = (2/n) * [1 - 2 * sum_{j=1}^{floor((n-1)/2)} cos(2j*θ_k) / (4j² - 1)]
+ * where θ_k = arccos(x_k) = (2k-1)π/(2n).
  *
- * We use the direct Lagrange integration approach: compute the integral
- * of each Lagrange basis polynomial over [-1, 1].
+ * This rule is exact for polynomials up to degree n-1 and exhibits
+ * exponential convergence for analytic functions.
  */
-function computeClenshawCurtisWeights(nodes, n) {
-  // For Chebyshev nodes of the first kind, use the weight formula:
-  // w_k = (2/n) * sum_{j=0}^{n-1} (1/(1-4j^2)) * cos(j * (2k-1) * pi / n)
-  // where the sum excludes terms where 4j^2 = 1 (never happens for integer j)
-
+function computeFejerWeights(nodes, n) {
   const weights = [];
+  const maxJ = Math.floor((n - 1) / 2);
 
   for (let k = 1; k <= n; k++) {
-    let w = 0;
-    for (let j = 0; j < n; j++) {
-      const factor = j === 0 ? 1 : 2;
-      const cosArg = j * (2 * k - 1) * Math.PI / n;
-      const denom = 1 - 4 * j * j;
-      if (denom !== 0) {
-        w += factor * Math.cos(cosArg) / denom;
-      }
+    const theta = (2 * k - 1) * Math.PI / (2 * n);
+    let w = 1;
+    for (let j = 1; j <= maxJ; j++) {
+      w -= (2 / (4 * j * j - 1)) * Math.cos(2 * j * theta);
     }
     weights.push((2 / n) * w);
   }
 
-  // Sort weights to match sorted nodes
-  // Since we sorted nodes, we need to reverse the weight order
-  // (nodes were cos((2k-1)pi/2n) for k=1..n, which decrease, then we sorted ascending)
-  // The original k=n gives the smallest node, k=1 gives the largest
-  // After sorting nodes ascending, weights should correspond in reverse
+  // Reverse to match sorted nodes (original k=n is smallest, k=1 is largest)
   weights.reverse();
 
   return weights;

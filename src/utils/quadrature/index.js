@@ -51,11 +51,11 @@ export const QUADRATURE_METHODS = {
     shortName: 'Chebyshev',
     color: '#f59e0b',
     getNodesAndWeights: (n) => chebyshev.getNodesAndWeights(n),
-    description: 'Clenshaw-Curtis quadrature using Chebyshev polynomial roots.',
+    description: 'Fejér quadrature using roots of Chebyshev polynomials.',
     properties: [
+      'n points exact for polynomials up to degree n-1',
       'Nodes cluster near endpoints, reducing interpolation error',
       'Avoids Runge phenomenon (unlike equally spaced)',
-      'Near-optimal for polynomial interpolation',
       'Exponential convergence for analytic functions'
     ]
   },
