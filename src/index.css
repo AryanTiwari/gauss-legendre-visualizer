@@ -27,6 +27,25 @@ body {
   aspect-ratio: 1/1;
 }
 
+/* JSXGraph infobox (hover tooltip) styles */
+.JXGinfobox {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 6px !important;
+  padding: 6px 10px !important;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace !important;
+  font-size: 13px !important;
+  color: #1f2937 !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+  pointer-events: none;
+}
+
+.dark .JXGinfobox {
+  background-color: rgba(31, 41, 55, 0.95) !important;
+  border-color: #4b5563 !important;
+  color: #e5e7eb !important;
+}
+
 /* KaTeX display styles */
 .katex-display {
   margin: 0.5em 0;

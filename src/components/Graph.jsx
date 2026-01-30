@@ -341,18 +341,28 @@ export function Graph({
         }
 
         // Draw nodes and function points
-        details.forEach((detail) => {
+        details.forEach((detail, idx) => {
           const xi = detail.originalNode;
           const y = transformedFn(xi);
           if (!isFinite(y)) return;
 
           board.create('point', [xi, 0], {
             size: 4, color: isDarkMode ? '#e5e7eb' : '#1f2937',
-            name: '', fixed: true, highlight: false
+            name: '', fixed: true, highlight: true,
+            showInfobox: false
           });
           board.create('point', [xi, y], {
             size: 3, color: baseColor,
-            name: '', fixed: true, highlight: false
+            name: '', fixed: true, highlight: true,
+            showInfobox: true,
+            infoboxDigits: 4,
+            label: {
+              visible: false,
+              offset: [10, 10],
+              fontSize: 13,
+              strokeColor: isDarkMode ? '#e5e7eb' : '#1f2937',
+              useMathJax: false
+            }
           });
         });
       } else {
@@ -381,11 +391,21 @@ export function Graph({
 
           board.create('point', [xi, 0], {
             size: 4, color: isDarkMode ? '#e5e7eb' : '#1f2937',
-            name: '', fixed: true, highlight: false
+            name: '', fixed: true, highlight: true,
+            showInfobox: false
           });
           board.create('point', [xi, y], {
             size: 3, color: baseColor,
-            name: '', fixed: true, highlight: false
+            name: '', fixed: true, highlight: true,
+            showInfobox: true,
+            infoboxDigits: 4,
+            label: {
+              visible: false,
+              offset: [10, 10],
+              fontSize: 13,
+              strokeColor: isDarkMode ? '#e5e7eb' : '#1f2937',
+              useMathJax: false
+            }
           });
 
           currentX = rightX;

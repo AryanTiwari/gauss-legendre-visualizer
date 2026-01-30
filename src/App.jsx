@@ -61,10 +61,10 @@ function App() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-[1800px] mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-6 gap-6">
+      <main className="max-w-[1920px] mx-auto px-4 sm:px-6 py-6">
+        <div className="grid grid-cols-1 xl:grid-cols-12 lg:grid-cols-10 gap-4 lg:gap-6">
           {/* Left Column - Controls */}
-          <div className="lg:col-span-1 space-y-4">
+          <div className="xl:col-span-3 lg:col-span-3 space-y-4">
             <FunctionInput
               value={expression}
               onChange={setExpression}
@@ -88,7 +88,7 @@ function App() {
           </div>
 
           {/* Middle - Graph */}
-          <div className="lg:col-span-3 flex flex-col">
+          <div className="xl:col-span-5 lg:col-span-4 flex flex-col">
             <Graph
               fn={parsedFunction.fn}
               intervalA={intervalA}
@@ -107,7 +107,7 @@ function App() {
           </div>
 
           {/* Right Column - Results */}
-          <div className="lg:col-span-2">
+          <div className="xl:col-span-4 lg:col-span-3">
             <ResultsPanel
               allResults={allResults}
               enabledMethods={enabledMethods}

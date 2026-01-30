@@ -58,35 +58,35 @@ export function IntervalSliders({
         Integration Interval [a, b]
       </label>
 
-      <div className="flex gap-4 items-center">
+      <div className="grid grid-cols-[1fr_auto_1fr] gap-3 items-end">
         {/* Input A */}
-        <div className="flex-1">
+        <div>
           <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-            Lower bound (a)
+            Lower (a)
           </label>
           <input
             type="number"
             step="0.1"
             value={inputA}
             onChange={(e) => handleChangeA(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-center font-mono"
           />
         </div>
 
         {/* Separator */}
-        <span className="text-gray-400 dark:text-gray-500 text-xl mt-5">to</span>
+        <span className="text-gray-400 dark:text-gray-500 text-lg pb-2">to</span>
 
         {/* Input B */}
-        <div className="flex-1">
+        <div>
           <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-            Upper bound (b)
+            Upper (b)
           </label>
           <input
             type="number"
             step="0.1"
             value={inputB}
             onChange={(e) => handleChangeB(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-center font-mono"
           />
         </div>
       </div>
