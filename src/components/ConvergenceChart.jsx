@@ -31,7 +31,7 @@ export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode, 
     const maxLog = 2;
 
     const board = JXG.JSXGraph.initBoard(containerRef.current, {
-      boundingbox: [-2.0, maxLog + 1.5, 11.5, minLog - 1.5],
+      boundingbox: [-1.6, maxLog + 1.2, 11.5, minLog - 2.5],
       axis: false,
       showNavigation: false,
       showCopyright: false,
@@ -68,7 +68,7 @@ export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode, 
         fixed: true,
         highlight: false
       });
-      board.create('text', [-0.3, y, `10<sup>${y}</sup>`], {
+      board.create('text', [0.2, y, `10<sup>${y}</sup>`], {
         fontSize: 12,
         color: axisColor,
         fixed: true,
@@ -94,7 +94,7 @@ export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode, 
     });
 
     // Y-axis label (rotated)
-    board.create('text', [-1.3, (minLog + maxLog) / 2, 'Error'], {
+    board.create('text', [-0.9, (minLog + maxLog) / 2, 'Error'], {
       fontSize: 15,
       color: bgText,
       fixed: true,
@@ -204,15 +204,37 @@ export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode, 
             strokeColor: isDarkMode ? '#e5e7eb' : '#ffffff',
             strokeWidth: 2
           });
+          // Background box for error label
+          const labelX = degree + 0.4;
+          const labelY = logErr + 0.3 + labelOffset;
+          const boxPadX = 0.15;
+          const boxPadY = 0.35;
+          const boxWidth = 1.6;
+          board.create('polygon', [
+            [labelX - boxPadX, labelY + boxPadY],
+            [labelX + boxWidth, labelY + boxPadY],
+            [labelX + boxWidth, labelY - boxPadY],
+            [labelX - boxPadX, labelY - boxPadY]
+          ], {
+            fillColor: isDarkMode ? '#1f2937' : '#ffffff',
+            fillOpacity: 0.95,
+            strokeColor: method.color,
+            strokeWidth: 1,
+            fixed: true,
+            highlight: false,
+            vertices: { visible: false, fixed: true },
+            hasInnerPoints: false
+          });
           // Error label
-          board.create('text', [degree + 0.45, logErr + 0.3 + labelOffset, pt.error.toExponential(1)], {
-            fontSize: 10,
+          board.create('text', [labelX, labelY, pt.error.toExponential(1)], {
+            fontSize: 12,
             color: method.color,
             fixed: true,
             anchorX: 'left',
-            fontWeight: 'bold'
+            fontWeight: 'bold',
+            cssStyle: 'font-weight: 700;'
           });
-          labelOffset += 0.8;
+          labelOffset += 1.1;
         } else {
           // Exact — highlight diamond
           board.create('point', [degree, minLog + 0.3], {
@@ -229,30 +251,56 @@ export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode, 
       }
     }
 
-    // Legend (bottom-left)
-    let legendY = minLog + 0.5 + enabledMethods.length * 0.8;
+    // Legend (bottom-left with box)
+    const legendX = 1.0;
+    const legendSpacing = 1.1;
+    const legendBoxPaddingX = 0.3;
+    const legendBoxPaddingTop = 0.4;
+    const legendBoxPaddingBottom = 0.3;
+    const legendBoxHeight = (enabledMethods.length - 1) * legendSpacing + legendBoxPaddingTop + legendBoxPaddingBottom;
+    const legendBoxWidth = 2.6;
+    const legendStartY = minLog + legendBoxHeight - legendBoxPaddingBottom + 0.3;
+
+    // Legend background box
+    board.create('polygon', [
+      [legendX - legendBoxPaddingX, legendStartY + legendBoxPaddingTop],
+      [legendX + legendBoxWidth, legendStartY + legendBoxPaddingTop],
+      [legendX + legendBoxWidth, legendStartY - legendBoxHeight + legendBoxPaddingTop],
+      [legendX - legendBoxPaddingX, legendStartY - legendBoxHeight + legendBoxPaddingTop]
+    ], {
+      fillColor: isDarkMode ? '#1f2937' : '#ffffff',
+      fillOpacity: 1,
+      strokeColor: isDarkMode ? '#6b7280' : '#9ca3af',
+      strokeWidth: 1.5,
+      fixed: true,
+      highlight: false,
+      vertices: { visible: false, fixed: true },
+      hasInnerPoints: false
+    });
+
+    let legendY = legendStartY;
     for (const methodId of enabledMethods) {
       const method = QUADRATURE_METHODS[methodId];
-      board.create('segment', [[1, legendY], [1.8, legendY]], {
+      board.create('segment', [[legendX, legendY], [legendX + 0.6, legendY]], {
         strokeColor: method.color,
         strokeWidth: 2.5,
         fixed: true,
         highlight: false
       });
-      board.create('point', [1.4, legendY], {
+      board.create('point', [legendX + 0.3, legendY], {
         size: 2,
         color: method.color,
         name: '',
         fixed: true,
         highlight: false
       });
-      board.create('text', [2.0, legendY, method.shortName], {
+      board.create('text', [legendX + 0.8, legendY, method.shortName], {
         fontSize: 11,
         color: method.color,
         fixed: true,
         anchorX: 'left'
       });
-      legendY -= 0.8;
+      legendY -= legendSpacing;
     }
 
     return () => {

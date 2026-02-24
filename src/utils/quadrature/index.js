@@ -33,8 +33,8 @@ export const QUADRATURE_METHODS = {
   },
   equallySpaced: {
     id: 'equallySpaced',
-    name: 'Equally Spaced',
-    shortName: 'Equi-Spaced',
+    name: 'Trapezoidal',
+    shortName: 'Trapezoidal',
     color: '#10b981',
     getNodesAndWeights: (n) => equallySpaced.getNodesAndWeights(n),
     description: 'Composite trapezoid rule with uniformly distributed nodes.',

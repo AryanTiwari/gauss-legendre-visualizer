@@ -2,7 +2,7 @@
  * Random Node Quadrature (Monte Carlo Style)
  *
  * Nodes are generated from a seeded PRNG and sorted for visualization.
- * Weights are equal: each wi = 2/n so they sum to 2 (the length of [-1,1]).
+ * Each weight equals the width of its segment (distance from previous node/boundary).
  *
  * Uses the Mulberry32 algorithm for reproducible pseudorandom numbers.
  *
@@ -47,8 +47,13 @@ export function getNodesAndWeights(n, seed = 42) {
   // Sort for consistent visualization
   nodes.sort((a, b) => a - b);
 
-  // Equal weights summing to 2
-  const weights = Array(n).fill(2 / n);
+  // Weights equal to segment widths (distance from previous node/boundary)
+  // First node: distance from -1 to node[0]
+  // Subsequent nodes: distance from node[i-1] to node[i]
+  const weights = nodes.map((xi, i) => {
+    const prev = i === 0 ? -1 : nodes[i - 1];
+    return xi - prev;
+  });
 
   return { nodes, weights };
 }

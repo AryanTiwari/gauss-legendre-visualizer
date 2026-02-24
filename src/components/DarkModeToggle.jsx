@@ -6,15 +6,19 @@ import { useState, useEffect } from 'react';
 
 export function DarkModeToggle() {
   const [isDark, setIsDark] = useState(() => {
-    // Check localStorage or system preference
+    // Check localStorage, default to dark mode
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('darkMode');
-      if (stored !== null) {
-        return stored === 'true';
+      const shouldBeDark = stored === null ? true : stored === 'true';
+      // Apply immediately during initialization to prevent flash
+      if (shouldBeDark) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
       }
-      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+      return shouldBeDark;
     }
-    return false;
+    return true;
   });
 
   useEffect(() => {

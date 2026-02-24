@@ -29,7 +29,7 @@ const EDUCATIONAL_CONTENT = {
     ]
   },
   equallySpaced: {
-    title: 'Equally Spaced (Composite Trapezoid)',
+    title: 'Trapezoidal (Composite Trapezoid)',
     formula: 'Nodes at xi = -1 + 2i/(n-1). Endpoint weights = h/2, interior = h.',
     explanation:
       'The composite trapezoid rule divides the interval into equal subintervals ' +
