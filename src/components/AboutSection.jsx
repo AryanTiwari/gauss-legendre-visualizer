@@ -98,12 +98,12 @@ export function AboutSection() {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-      <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
+    <div className="bg-white dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+      <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
         About the Methods
       </h2>
 
-      <div className="space-y-1">
+      <div className="space-y-2">
         {METHOD_IDS.map((methodId) => {
           const method = QUADRATURE_METHODS[methodId];
           const content = EDUCATIONAL_CONTENT[methodId];
@@ -113,17 +113,17 @@ export function AboutSection() {
             <div key={methodId}>
               <button
                 onClick={() => toggle(methodId)}
-                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
               >
                 <span
-                  className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                  className="w-3 h-3 rounded-full flex-shrink-0"
                   style={{ backgroundColor: method.color }}
                 />
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300 flex-1">
+                <span className="text-base font-medium text-gray-700 dark:text-gray-300 flex-1">
                   {content.title}
                 </span>
                 <svg
-                  className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                  className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
                   fill="none" stroke="currentColor" viewBox="0 0 24 24"
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -131,21 +131,21 @@ export function AboutSection() {
               </button>
 
               {isExpanded && (
-                <div className="px-3 pb-3 text-xs text-gray-600 dark:text-gray-300 space-y-2">
-                  <p className="font-mono text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 rounded p-2">
+                <div className="px-4 pb-4 text-sm text-gray-600 dark:text-gray-300 space-y-3">
+                  <p className="font-mono text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 rounded p-3">
                     {content.formula}
                   </p>
 
-                  <p>{content.explanation}</p>
+                  <p className="leading-relaxed">{content.explanation}</p>
 
                   <div>
                     <strong className="text-gray-900 dark:text-gray-100">Convergence:</strong>
-                    <p className="mt-0.5">{content.convergence}</p>
+                    <p className="mt-1 leading-relaxed">{content.convergence}</p>
                   </div>
 
                   <div>
                     <strong className="text-gray-900 dark:text-gray-100">Key properties:</strong>
-                    <ul className="mt-1 space-y-0.5 list-disc list-inside text-gray-600 dark:text-gray-400">
+                    <ul className="mt-1.5 space-y-1 list-disc list-inside text-gray-600 dark:text-gray-400">
                       {content.keyFacts.map((fact, i) => (
                         <li key={i}>{fact}</li>
                       ))}

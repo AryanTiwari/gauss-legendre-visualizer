@@ -7,7 +7,7 @@
 import { useState, useMemo } from 'react';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
-import { toLatex, EXAMPLE_FUNCTIONS, SUPPORTED_FUNCTIONS } from '../utils/mathParser';
+import { toLatex, EXAMPLE_FUNCTIONS } from '../utils/mathParser';
 
 export function FunctionInput({
   value,
@@ -16,7 +16,6 @@ export function FunctionInput({
   error
 }) {
   const [showExamples, setShowExamples] = useState(false);
-  const [showHelp, setShowHelp] = useState(false);
 
   // Convert expression to LaTeX and render
   const latexPreview = useMemo(() => {
@@ -80,12 +79,6 @@ export function FunctionInput({
         >
           {showExamples ? 'Hide examples' : 'Show examples'}
         </button>
-        <button
-          onClick={() => setShowHelp(!showHelp)}
-          className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 underline"
-        >
-          {showHelp ? 'Hide help' : 'Supported functions'}
-        </button>
       </div>
 
       {/* Example functions dropdown */}
@@ -106,25 +99,6 @@ export function FunctionInput({
         </div>
       )}
 
-      {/* Help section */}
-      {showHelp && (
-        <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-          <h4 className="font-medium text-sm text-gray-700 dark:text-gray-200 mb-2">
-            Supported Functions & Constants
-          </h4>
-          <div className="grid grid-cols-2 gap-1 text-sm">
-            {SUPPORTED_FUNCTIONS.map((fn, i) => (
-              <div key={i} className="text-gray-600 dark:text-gray-300">
-                <code className="text-indigo-600 dark:text-indigo-400">{fn.name}</code>
-                <span className="text-gray-400 dark:text-gray-500 ml-1">- {fn.description}</span>
-              </div>
-            ))}
-          </div>
-          <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-            Use standard operators: + - * / ^ ( )
-          </p>
-        </div>
-      )}
     </div>
   );
 }

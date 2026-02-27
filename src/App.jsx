@@ -46,7 +46,7 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <header className="border-b border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm sticky top-0 z-50">
+      <header className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <div>
             <h1 className="text-xl font-semibold text-gray-900 dark:text-white tracking-tight">
@@ -62,7 +62,7 @@ function App() {
 
       {/* Main Content */}
       <main className="max-w-[1920px] mx-auto px-4 sm:px-6 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(220px,2.3fr)_5fr_3.5fr] xl:grid-cols-[minmax(240px,2.3fr)_6fr_4fr] gap-4 lg:gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(220px,2.3fr)_4fr_4fr] xl:grid-cols-[minmax(240px,2.3fr)_4.5fr_4.5fr] gap-4 lg:gap-6">
           {/* Left Column - Controls */}
           <div className="space-y-4">
             <FunctionInput
@@ -83,8 +83,6 @@ function App() {
               onChangeA={setIntervalA}
               onChangeB={setIntervalB}
             />
-
-            <AboutSection />
           </div>
 
           {/* Middle - Graph */}
@@ -119,6 +117,14 @@ function App() {
               onToggle={toggleMethod}
               functionValidation={functionValidation}
             />
+          </div>
+        </div>
+
+        {/* About Section - Below main grid, aligned with graph column */}
+        <div className="mt-3 grid grid-cols-1 lg:grid-cols-[minmax(220px,2.3fr)_1fr] gap-4 lg:gap-6">
+          <div className="hidden lg:block" /> {/* Spacer for left column */}
+          <div>
+            <AboutSection />
           </div>
         </div>
       </main>

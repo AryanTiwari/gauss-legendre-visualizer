@@ -5,13 +5,49 @@
  * with one line per enabled quadrature method.
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import JXG from 'jsxgraph';
 import { QUADRATURE_METHODS } from '../utils/quadrature/index.js';
 
 export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode, degree }) {
   const containerRef = useRef(null);
   const boardRef = useRef(null);
+  const [legendPos, setLegendPos] = useState({ x: 58, bottom: 200 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragOffset = useRef({ x: 0, y: 0 });
+
+  const handleMouseDown = useCallback((e) => {
+    setIsDragging(true);
+    const rect = e.currentTarget.getBoundingClientRect();
+    dragOffset.current = {
+      x: e.clientX - rect.left,
+      y: rect.bottom - e.clientY
+    };
+    e.preventDefault();
+  }, []);
+
+  const handleMouseMove = useCallback((e) => {
+    if (!isDragging || !containerRef.current) return;
+    const containerRect = containerRef.current.getBoundingClientRect();
+    const newX = e.clientX - containerRect.left - dragOffset.current.x;
+    const newBottom = containerRect.bottom - e.clientY - dragOffset.current.y;
+    setLegendPos({ x: Math.max(0, newX), bottom: Math.max(0, newBottom) });
+  }, [isDragging]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  useEffect(() => {
+    if (isDragging) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isDragging, handleMouseMove, handleMouseUp]);
 
   useEffect(() => {
     if (!containerRef.current || !convergenceData) return;
@@ -251,58 +287,6 @@ export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode, 
       }
     }
 
-    // Legend (bottom-left with box)
-    const legendX = 1.0;
-    const legendSpacing = 1.1;
-    const legendBoxPaddingX = 0.3;
-    const legendBoxPaddingTop = 0.4;
-    const legendBoxPaddingBottom = 0.3;
-    const legendBoxHeight = (enabledMethods.length - 1) * legendSpacing + legendBoxPaddingTop + legendBoxPaddingBottom;
-    const legendBoxWidth = 2.6;
-    const legendStartY = minLog + legendBoxHeight - legendBoxPaddingBottom + 0.3;
-
-    // Legend background box
-    board.create('polygon', [
-      [legendX - legendBoxPaddingX, legendStartY + legendBoxPaddingTop],
-      [legendX + legendBoxWidth, legendStartY + legendBoxPaddingTop],
-      [legendX + legendBoxWidth, legendStartY - legendBoxHeight + legendBoxPaddingTop],
-      [legendX - legendBoxPaddingX, legendStartY - legendBoxHeight + legendBoxPaddingTop]
-    ], {
-      fillColor: isDarkMode ? '#1f2937' : '#ffffff',
-      fillOpacity: 1,
-      strokeColor: isDarkMode ? '#6b7280' : '#9ca3af',
-      strokeWidth: 1.5,
-      fixed: true,
-      highlight: false,
-      vertices: { visible: false, fixed: true },
-      hasInnerPoints: false
-    });
-
-    let legendY = legendStartY;
-    for (const methodId of enabledMethods) {
-      const method = QUADRATURE_METHODS[methodId];
-      board.create('segment', [[legendX, legendY], [legendX + 0.6, legendY]], {
-        strokeColor: method.color,
-        strokeWidth: 2.5,
-        fixed: true,
-        highlight: false
-      });
-      board.create('point', [legendX + 0.3, legendY], {
-        size: 2,
-        color: method.color,
-        name: '',
-        fixed: true,
-        highlight: false
-      });
-      board.create('text', [legendX + 0.8, legendY, method.shortName], {
-        fontSize: 11,
-        color: method.color,
-        fixed: true,
-        anchorX: 'left'
-      });
-      legendY -= legendSpacing;
-    }
-
     return () => {
       if (boardRef.current) {
         JXG.JSXGraph.freeBoard(boardRef.current);
@@ -320,11 +304,51 @@ export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode, 
   }
 
   return (
-    <div
-      ref={containerRef}
-      className="jxgbox w-full"
-      style={{ aspectRatio: '10/9', minHeight: '400px' }}
-    />
+    <div className="relative">
+      <div
+        ref={containerRef}
+        className="jxgbox w-full"
+        style={{ aspectRatio: '5/4', minHeight: '360px' }}
+      />
+      {/* Draggable Legend */}
+      {convergenceData && enabledMethods.length > 0 && (
+        <div
+          onMouseDown={handleMouseDown}
+          style={{
+            position: 'absolute',
+            left: legendPos.x,
+            bottom: legendPos.bottom,
+            cursor: isDragging ? 'grabbing' : 'grab',
+            userSelect: 'none'
+          }}
+          className="px-3 py-2 rounded-lg border shadow-sm bg-white/95 dark:bg-gray-800/95 border-gray-300 dark:border-gray-600"
+        >
+          {enabledMethods.map((methodId) => {
+            const method = QUADRATURE_METHODS[methodId];
+            return (
+              <div key={methodId} className="flex items-center gap-2 py-0.5">
+                <div className="flex items-center gap-1">
+                  <div
+                    className="w-4 h-0.5 rounded"
+                    style={{ backgroundColor: method.color }}
+                  />
+                  <div
+                    className="w-1.5 h-1.5 rounded-full"
+                    style={{ backgroundColor: method.color }}
+                  />
+                </div>
+                <span
+                  className="text-xs font-medium"
+                  style={{ color: method.color }}
+                >
+                  {method.shortName}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
