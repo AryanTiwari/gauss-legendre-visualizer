@@ -457,7 +457,7 @@ export function Graph({
   };
 
   return (
-    <div className="w-full bg-white dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div className="w-full bg-white/80 dark:bg-gray-800/50 rounded-xl border border-gray-200/80 dark:border-gray-700 overflow-hidden">
       {/* Tab navigation */}
       <div className="flex border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 overflow-x-auto">
         {tabs.map((tab) => {
@@ -494,7 +494,7 @@ export function Graph({
       {/* Graph container or convergence chart */}
       {activeTab === 'convergence' ? (
         functionInvalid ? (
-          <div className="flex items-center justify-center" style={{ aspectRatio: '5/4', minHeight: '360px' }}>
+          <div className="flex items-center justify-center" style={{ aspectRatio: '1/1', minHeight: '360px' }}>
             <div className="text-center px-8 py-6 max-w-md">
               <div className="text-amber-500 dark:text-amber-400 mb-3">
                 <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -519,7 +519,7 @@ export function Graph({
             ref={containerRef}
             id="jxgbox"
             className="jxgbox w-full"
-            style={{ aspectRatio: '5/4', minHeight: '360px' }}
+            style={{ aspectRatio: '1/1', minHeight: '360px' }}
           />
           {/* Warning overlay for invalid function on interval (method tabs only) */}
           {functionInvalid && activeTab !== 'original' && (

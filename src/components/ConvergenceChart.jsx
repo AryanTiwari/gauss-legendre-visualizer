@@ -5,49 +5,13 @@
  * with one line per enabled quadrature method.
  */
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import JXG from 'jsxgraph';
 import { QUADRATURE_METHODS } from '../utils/quadrature/index.js';
 
 export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode, degree }) {
   const containerRef = useRef(null);
   const boardRef = useRef(null);
-  const [legendPos, setLegendPos] = useState({ x: 58, bottom: 200 });
-  const [isDragging, setIsDragging] = useState(false);
-  const dragOffset = useRef({ x: 0, y: 0 });
-
-  const handleMouseDown = useCallback((e) => {
-    setIsDragging(true);
-    const rect = e.currentTarget.getBoundingClientRect();
-    dragOffset.current = {
-      x: e.clientX - rect.left,
-      y: rect.bottom - e.clientY
-    };
-    e.preventDefault();
-  }, []);
-
-  const handleMouseMove = useCallback((e) => {
-    if (!isDragging || !containerRef.current) return;
-    const containerRect = containerRef.current.getBoundingClientRect();
-    const newX = e.clientX - containerRect.left - dragOffset.current.x;
-    const newBottom = containerRect.bottom - e.clientY - dragOffset.current.y;
-    setLegendPos({ x: Math.max(0, newX), bottom: Math.max(0, newBottom) });
-  }, [isDragging]);
-
-  const handleMouseUp = useCallback(() => {
-    setIsDragging(false);
-  }, []);
-
-  useEffect(() => {
-    if (isDragging) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
-      return () => {
-        window.removeEventListener('mousemove', handleMouseMove);
-        window.removeEventListener('mouseup', handleMouseUp);
-      };
-    }
-  }, [isDragging, handleMouseMove, handleMouseUp]);
 
   useEffect(() => {
     if (!containerRef.current || !convergenceData) return;
@@ -59,15 +23,25 @@ export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode, 
     }
 
     const axisColor = isDarkMode ? '#9ca3af' : '#374151';
-    const labelColor = isDarkMode ? '#e5e7eb' : '#374151';
     const bgText = isDarkMode ? '#d1d5db' : '#4b5563';
 
     // Fixed y-axis range: 10^-17 to 10^2
     const minLog = -17;
     const maxLog = 2;
 
+    // Calculate square bounding box for true 1:1 aspect ratio
+    // Y range: (maxLog + 1.2) to (minLog - 2.5) = 3.2 to -19.5 = 22.7 units
+    const yTop = maxLog + 1.2;
+    const yBottom = minLog - 2.5;
+    const yRange = yTop - yBottom; // 22.7
+
+    // Center x around 5.5 (middle of data) and make range equal to yRange
+    const xCenter = 5.5;
+    const xLeft = xCenter - yRange / 2;
+    const xRight = xCenter + yRange / 2;
+
     const board = JXG.JSXGraph.initBoard(containerRef.current, {
-      boundingbox: [-1.6, maxLog + 1.2, 11.5, minLog - 2.5],
+      boundingbox: [xLeft, yTop, xRight, yBottom],
       axis: false,
       showNavigation: false,
       showCopyright: false,
@@ -78,19 +52,25 @@ export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode, 
 
     boardRef.current = board;
 
+    // ============================================
+    // LAYER 0: Background elements (grid, axes)
+    // ============================================
+
     // Draw custom grid
     for (let n = 1; n <= 10; n++) {
       board.create('segment', [[n, minLog], [n, maxLog]], {
         strokeColor: isDarkMode ? '#374151' : '#e5e7eb',
         strokeWidth: 1,
         fixed: true,
-        highlight: false
+        highlight: false,
+        layer: 0
       });
       board.create('text', [n, minLog - 0.5, `${n}`], {
         fontSize: 14,
         color: axisColor,
         fixed: true,
-        anchorX: 'middle'
+        anchorX: 'middle',
+        layer: 0
       });
     }
 
@@ -102,14 +82,16 @@ export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode, 
           : (isDarkMode ? '#374151' : '#e5e7eb'),
         strokeWidth: isZeroLine ? 2.5 : 1,
         fixed: true,
-        highlight: false
+        highlight: false,
+        layer: 0
       });
       board.create('text', [0.2, y, `10<sup>${y}</sup>`], {
         fontSize: 12,
         color: axisColor,
         fixed: true,
         anchorX: 'right',
-        display: 'html'
+        display: 'html',
+        layer: 0
       });
     }
 
@@ -118,7 +100,8 @@ export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode, 
       strokeColor: isDarkMode ? '#9ca3af' : '#374151',
       strokeWidth: 2,
       fixed: true,
-      highlight: false
+      highlight: false,
+      layer: 0
     });
 
     // Prominent x-axis line (bottom border)
@@ -126,7 +109,8 @@ export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode, 
       strokeColor: isDarkMode ? '#9ca3af' : '#374151',
       strokeWidth: 2,
       fixed: true,
-      highlight: false
+      highlight: false,
+      layer: 0
     });
 
     // Y-axis label (rotated)
@@ -135,7 +119,8 @@ export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode, 
       color: bgText,
       fixed: true,
       anchorX: 'middle',
-      rotate: 90
+      rotate: 90,
+      layer: 0
     });
 
     // X-axis label
@@ -143,10 +128,14 @@ export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode, 
       fontSize: 15,
       color: bgText,
       fixed: true,
-      anchorX: 'middle'
+      anchorX: 'middle',
+      layer: 0
     });
 
-    // Highlight current degree column
+    // ============================================
+    // LAYER 1: Highlight column (below everything else)
+    // ============================================
+
     if (degree >= 1 && degree <= 10) {
       board.create('polygon', [
         [degree - 0.4, minLog], [degree + 0.4, minLog],
@@ -158,18 +147,23 @@ export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode, 
         fixed: true,
         highlight: false,
         vertices: { visible: false, fixed: true },
-        hasInnerPoints: false
+        hasInnerPoints: false,
+        layer: 1
       });
       board.create('text', [degree, maxLog + 0.5, `n=${degree}`], {
         fontSize: 12,
         color: isDarkMode ? '#a5b4fc' : '#6366f1',
         fixed: true,
         anchorX: 'middle',
-        fontWeight: 'bold'
+        fontWeight: 'bold',
+        layer: 1
       });
     }
 
-    // Plot each method's convergence line
+    // ============================================
+    // LAYER 2: Data lines and points
+    // ============================================
+
     for (const methodId of enabledMethods) {
       const method = QUADRATURE_METHODS[methodId];
       const points = convergenceData.data[methodId];
@@ -189,7 +183,8 @@ export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode, 
         board.create('curve', [xCoords, yCoords], {
           strokeColor: method.color,
           strokeWidth: 2.5,
-          highlight: false
+          highlight: false,
+          layer: 2
         });
       }
 
@@ -200,7 +195,8 @@ export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode, 
           color: method.color,
           name: '',
           fixed: true,
-          highlight: false
+          highlight: false,
+          layer: 2
         });
       }
 
@@ -213,14 +209,19 @@ export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode, 
           name: '',
           fixed: true,
           highlight: false,
-          face: 'diamond'
+          face: 'diamond',
+          layer: 2
         });
       }
     }
 
-    // Annotate current degree points with error values
+    // ============================================
+    // LAYER 3: Labels (drawn last, on top of everything)
+    // ============================================
+
     if (degree >= 1 && degree <= 10) {
-      let labelOffset = 0;
+      const labels = [];
+
       for (const methodId of enabledMethods) {
         const method = QUADRATURE_METHODS[methodId];
         const points = convergenceData.data[methodId];
@@ -230,49 +231,15 @@ export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode, 
 
         if (pt.error > 0) {
           const logErr = Math.log10(pt.error);
-          // Larger highlighted point
-          board.create('point', [degree, logErr], {
-            size: 5,
-            color: method.color,
-            name: '',
-            fixed: true,
-            highlight: false,
-            strokeColor: isDarkMode ? '#e5e7eb' : '#ffffff',
-            strokeWidth: 2
+          labels.push({
+            methodId,
+            method,
+            logErr,
+            error: pt.error,
+            isExact: false
           });
-          // Background box for error label
-          const labelX = degree + 0.4;
-          const labelY = logErr + 0.3 + labelOffset;
-          const boxPadX = 0.15;
-          const boxPadY = 0.35;
-          const boxWidth = 1.6;
-          board.create('polygon', [
-            [labelX - boxPadX, labelY + boxPadY],
-            [labelX + boxWidth, labelY + boxPadY],
-            [labelX + boxWidth, labelY - boxPadY],
-            [labelX - boxPadX, labelY - boxPadY]
-          ], {
-            fillColor: isDarkMode ? '#1f2937' : '#ffffff',
-            fillOpacity: 0.95,
-            strokeColor: method.color,
-            strokeWidth: 1,
-            fixed: true,
-            highlight: false,
-            vertices: { visible: false, fixed: true },
-            hasInnerPoints: false
-          });
-          // Error label
-          board.create('text', [labelX, labelY, pt.error.toExponential(1)], {
-            fontSize: 12,
-            color: method.color,
-            fixed: true,
-            anchorX: 'left',
-            fontWeight: 'bold',
-            cssStyle: 'font-weight: 700;'
-          });
-          labelOffset += 1.1;
         } else {
-          // Exact — highlight diamond
+          // Exact — highlight diamond (layer 3)
           board.create('point', [degree, minLog + 0.3], {
             size: 6,
             color: method.color,
@@ -281,9 +248,108 @@ export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode, 
             highlight: false,
             face: 'diamond',
             strokeColor: isDarkMode ? '#e5e7eb' : '#ffffff',
-            strokeWidth: 2
+            strokeWidth: 2,
+            layer: 3
           });
         }
+      }
+
+      // Sort labels by error (highest error = highest on chart = first)
+      labels.sort((a, b) => b.logErr - a.logErr);
+
+      // Calculate label positions avoiding overlap
+      const labelHeight = 1.0;
+      const labelSpacing = 0.2;
+      const graphTopEdge = maxLog - 0.5;
+      const graphBottomEdge = minLog + 1;
+
+      const placedLabels = [];
+
+      for (const label of labels) {
+        // Calculate base position - prefer to the right of the point
+        let labelX = degree + 0.35;
+        let labelY = label.logErr;
+
+        // Check if label would go off the right edge
+        if (degree >= 9) {
+          labelX = degree - 0.35;
+        }
+
+        // Adjust Y to avoid overlap with previously placed labels
+        for (const placed of placedLabels) {
+          const yOverlap = Math.abs(labelY - placed.y) < (labelHeight + labelSpacing);
+          const xOverlap = Math.abs(labelX - placed.x) < 1.2;
+          if (yOverlap && xOverlap) {
+            labelY = placed.y - labelHeight - labelSpacing;
+          }
+        }
+
+        // Clamp to graph bounds
+        labelY = Math.max(graphBottomEdge, Math.min(graphTopEdge, labelY));
+
+        placedLabels.push({ x: labelX, y: labelY });
+
+        // Draw larger highlighted point (layer 3)
+        board.create('point', [degree, label.logErr], {
+          size: 5,
+          color: label.method.color,
+          name: '',
+          fixed: true,
+          highlight: false,
+          strokeColor: isDarkMode ? '#e5e7eb' : '#ffffff',
+          strokeWidth: 2,
+          layer: 3
+        });
+
+        // Format the error label text
+        const errorText = label.error.toExponential(1);
+
+        // Calculate box dimensions dynamically based on text length
+        // Each character is approximately 0.13 units wide, plus padding
+        const charWidth = 0.13;
+        const basePadding = 0.2;
+        const boxWidth = (errorText.length * charWidth) + basePadding;
+        const boxHeight = 0.7;
+        const boxPadX = 0.08;
+        const anchorX = degree >= 9 ? 'right' : 'left';
+
+        let boxLeft, boxRight;
+        if (degree >= 9) {
+          boxRight = labelX + boxPadX;
+          boxLeft = boxRight - boxWidth;
+        } else {
+          boxLeft = labelX - boxPadX;
+          boxRight = boxLeft + boxWidth;
+        }
+
+        // Draw solid background box (layer 8 - above everything)
+        board.create('polygon', [
+          [boxLeft, labelY + boxHeight/2],
+          [boxRight, labelY + boxHeight/2],
+          [boxRight, labelY - boxHeight/2],
+          [boxLeft, labelY - boxHeight/2]
+        ], {
+          fillColor: label.method.color,
+          fillOpacity: 1,
+          strokeColor: isDarkMode ? '#e5e7eb' : '#ffffff',
+          strokeWidth: 1.5,
+          fixed: true,
+          highlight: false,
+          vertices: { visible: false, fixed: true },
+          hasInnerPoints: false,
+          layer: 8
+        });
+
+        // Draw error label with white text (layer 9 - topmost)
+        board.create('text', [labelX, labelY, errorText], {
+          fontSize: 11,
+          color: '#ffffff',
+          fixed: true,
+          anchorX: anchorX,
+          fontWeight: 'bold',
+          cssStyle: 'font-weight: 700; text-shadow: 0 0 2px rgba(0,0,0,0.3);',
+          layer: 9
+        });
       }
     }
 
@@ -304,51 +370,11 @@ export function ConvergenceChart({ convergenceData, enabledMethods, isDarkMode, 
   }
 
   return (
-    <div className="relative">
-      <div
-        ref={containerRef}
-        className="jxgbox w-full"
-        style={{ aspectRatio: '5/4', minHeight: '360px' }}
-      />
-      {/* Draggable Legend */}
-      {convergenceData && enabledMethods.length > 0 && (
-        <div
-          onMouseDown={handleMouseDown}
-          style={{
-            position: 'absolute',
-            left: legendPos.x,
-            bottom: legendPos.bottom,
-            cursor: isDragging ? 'grabbing' : 'grab',
-            userSelect: 'none'
-          }}
-          className="px-3 py-2 rounded-lg border shadow-sm bg-white/95 dark:bg-gray-800/95 border-gray-300 dark:border-gray-600"
-        >
-          {enabledMethods.map((methodId) => {
-            const method = QUADRATURE_METHODS[methodId];
-            return (
-              <div key={methodId} className="flex items-center gap-2 py-0.5">
-                <div className="flex items-center gap-1">
-                  <div
-                    className="w-4 h-0.5 rounded"
-                    style={{ backgroundColor: method.color }}
-                  />
-                  <div
-                    className="w-1.5 h-1.5 rounded-full"
-                    style={{ backgroundColor: method.color }}
-                  />
-                </div>
-                <span
-                  className="text-xs font-medium"
-                  style={{ color: method.color }}
-                >
-                  {method.shortName}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
+    <div
+      ref={containerRef}
+      className="jxgbox w-full"
+      style={{ aspectRatio: '1/1', minHeight: '360px' }}
+    />
   );
 }
 

@@ -6,7 +6,7 @@
 
 export function DegreeSelector({ value, onChange }) {
   return (
-    <div className="bg-white dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+    <div className="bg-white/80 dark:bg-gray-800/50 rounded-xl border border-gray-200/80 dark:border-gray-700 p-4">
       <label className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">
         Quadrature Degree (n)
       </label>

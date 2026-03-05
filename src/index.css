@@ -16,6 +16,22 @@ body {
   min-height: 100vh;
 }
 
+/* Softer light mode colors */
+:root {
+  --bg-primary: #f8f9fb;
+  --bg-secondary: #f1f3f6;
+  --border-color: #e2e5ea;
+}
+
+/* Apply softer backgrounds in light mode */
+html:not(.dark) {
+  background-color: var(--bg-primary);
+}
+
+html:not(.dark) body {
+  background-color: var(--bg-primary);
+}
+
 /* Dark mode transition */
 * {
   transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;

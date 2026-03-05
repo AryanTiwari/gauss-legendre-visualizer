@@ -49,7 +49,7 @@ export function ResultsPanel({
   // Function not integrable on interval
   if (functionInvalid) {
     return (
-      <div className="bg-white dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-5">
+      <div className="bg-white/80 dark:bg-gray-800/50 rounded-xl border border-gray-200/80 dark:border-gray-700 p-5 space-y-5">
         {/* Integral Notation */}
         <div className="text-center dark:text-white">
           <div
@@ -81,7 +81,7 @@ export function ResultsPanel({
   // No results
   if (!allResults) {
     return (
-      <div className="bg-white dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+      <div className="bg-white/80 dark:bg-gray-800/50 rounded-xl border border-gray-200/80 dark:border-gray-700 p-4">
         <p className="text-gray-500 dark:text-gray-400 text-center">
           Enter a valid function to see results
         </p>
@@ -92,7 +92,7 @@ export function ResultsPanel({
   const activeResult = allResults[activeDetailTab];
 
   return (
-    <div className="bg-white dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-5">
+    <div className="bg-white/80 dark:bg-gray-800/50 rounded-xl border border-gray-200/80 dark:border-gray-700 p-5 space-y-5">
       {/* Integral Notation */}
       <div className="text-center dark:text-white">
         <div
